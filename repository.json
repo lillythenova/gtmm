@@ -5,6 +5,7 @@
       "name": "computer interface",
       "version": "2.1.5",
       "description": "Computer Interface is a library for Gorilla Tag which replaces the base computer with a custom computer, and allows developers to add functionality to it.",
+      "author": "DecalFree",
       "download_url": "https://github.com/DecalFree/ComputerInterface/releases/download/2.1.5/ComputerInterface-BepInEx.zip",
       "dependencies": []
     }
