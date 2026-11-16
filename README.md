@@ -4,7 +4,7 @@ GTMM is a desktop app for managing Gorilla Tag BepInEx plugins. It’s built wit
 
 > **AI disclosure:** AI tools were used to help with this project. The UI was created by me.
 
-# IF YOU WANT YOUR MOD REMOVED FROM THE DEFAULT REPO DM ME ON DISCORD ```lilly_the_nova```
+**IF YOU WANT YOUR MOD REMOVED FROM THE DEFAULT REPO DM ME ON DISCORD** ```lilly_the_nova```
 
 You can use it to:
 
