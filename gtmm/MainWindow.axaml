@@ -1,0 +1,1006 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:models="clr-namespace:gtmm.Models"
+        mc:Ignorable="d" d:DesignWidth="1318" d:DesignHeight="542"
+        x:Class="gtmm.MainWindow"
+        Title="Gorilla Tag Mod Manager (GTMM)"
+        Width="1318" Height="542"
+        MinWidth="900" MinHeight="450"
+        Background="{DynamicResource AppBgBrush}">
+
+    <Window.Styles>
+        
+        <Style Selector="Button.nav-squircle-btn">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.nav-squircle-btn:pointerover">
+            <Setter Property="Background" Value="#1449454F"/>
+            <Setter Property="RenderTransform" Value="scale(1.04)"/>
+        </Style>
+        <Style Selector="Button.nav-squircle-btn.active">
+            <Setter Property="Background" Value="{DynamicResource PrimaryContainer}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnPrimaryContainer}"/>
+            <Setter Property="RenderTransform" Value="scale(1.04)"/>
+        </Style>
+        <Style Selector="Button.nav-squircle-btn:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.94)"/>
+        </Style>
+        <Style Selector="Button.nav-squircle-btn Path">
+            <Setter Property="Stroke" Value="{DynamicResource TextSecondary}"/>
+        </Style>
+        <Style Selector="Button.nav-squircle-btn Ellipse">
+            <Setter Property="Stroke" Value="{DynamicResource TextSecondary}"/>
+        </Style>
+        <Style Selector="Button.nav-squircle-btn.active Path">
+            <Setter Property="Stroke" Value="{DynamicResource OnPrimaryContainer}"/>
+        </Style>
+        <Style Selector="Button.nav-squircle-btn.active Ellipse">
+            <Setter Property="Stroke" Value="{DynamicResource OnPrimaryContainer}"/>
+        </Style>
+
+        <Style Selector="Button.play-fab">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="CornerRadius" Value="28"/>
+            <Setter Property="Background" Value="{DynamicResource SecondaryContainer}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.play-fab:pointerover">
+            <Setter Property="Background" Value="#D8C7FF"/>
+            <Setter Property="RenderTransform" Value="scale(1.04)"/>
+        </Style>
+        <Style Selector="Button.play-fab:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.95)"/>
+        </Style>
+
+        <Style Selector="Button.folder-fab">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Background" Value="{DynamicResource PrimaryContainer}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.folder-fab:pointerover">
+            <Setter Property="Background" Value="#DFD2F6"/>
+            <Setter Property="RenderTransform" Value="scale(1.04)"/>
+        </Style>
+        <Style Selector="Button.folder-fab:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.95)"/>
+        </Style>
+
+        <Style Selector="Border.m3-checkbox">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Border.m3-checkbox.checked">
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryPurple}"/>
+            <Setter Property="Background" Value="{DynamicResource PrimaryPurple}"/>
+        </Style>
+
+        <Style Selector="Border.list-item-row:pointerover">
+            <Setter Property="Background" Value="#0F49454F"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="24" ColumnDefinitions="*,16,56">
+        
+        <Grid Grid.Column="0" RowDefinitions="Auto,24,*">
+            
+            <Panel Grid.Row="0" Height="56">
+                
+                <TextBlock x:Name="SettingsTopHeader"
+                           Text="Settings"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}"
+                           VerticalAlignment="Center"
+                           Margin="14,0,0,0"
+                           Opacity="0"
+                           IsHitTestVisible="False"
+                           RenderTransform="translateY(72px)">
+                    <TextBlock.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.28" Easing="CubicEaseOut"/>
+                        </Transitions>
+                    </TextBlock.Transitions>
+                </TextBlock>
+
+                <Grid x:Name="TopControlsRow"
+                      ColumnDefinitions="*,16,Auto"
+                      VerticalAlignment="Center"
+                      Opacity="1"
+                      RenderTransform="translateY(0px)">
+                    <Grid.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="Opacity" Duration="0:0:0.22" Easing="CubicEaseOut"/>
+                            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut"/>
+                        </Transitions>
+                    </Grid.Transitions>
+
+                    <Border Grid.Column="0"
+                            x:Name="SearchBarPill"
+                            Background="{DynamicResource SearchBgBrush}"
+                            CornerRadius="28"
+                            Height="56"
+                            Padding="8,0,12,0"
+                            RenderTransformOrigin="50%,50%">
+                        <Border.Transitions>
+                            <Transitions>
+                                <DoubleTransition Property="Opacity" Duration="0:0:0.22" Easing="CubicEaseOut"/>
+                                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut"/>
+                            </Transitions>
+                        </Border.Transitions>
+
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            
+                            <Button Grid.Column="0"
+                                    x:Name="FilterButton"
+                                    Classes="icon-btn"
+                                    Click="OnFilterButtonClick"
+                                    ToolTip.Tip="Filter options">
+                                <PathIcon Data="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
+                                          Width="24" Height="24"
+                                          Foreground="{DynamicResource TextSecondary}"/>
+                            </Button>
+
+                            <TextBox Grid.Column="1"
+                                     x:Name="SearchBox"
+                                     PlaceholderText="search installed mods"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     FocusAdorner="{x:Null}"
+                                     FontSize="15"
+                                     VerticalContentAlignment="Center"
+                                     Margin="8,0"/>
+
+                            <PathIcon Grid.Column="2"
+                                      Data="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                                      Width="24" Height="24"
+                                      Foreground="{DynamicResource TextSecondary}"
+                                      VerticalAlignment="Center"
+                                      Margin="4,0,8,0"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2"
+                            Background="{DynamicResource PillBgBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="28"
+                            Height="56"
+                            Padding="8,0">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            
+                            <Button x:Name="RefreshButton"
+                                    Classes="icon-btn"
+                                    Click="OnRefreshClick"
+                                    ToolTip.Tip="Reload mods &amp; repositories">
+                                <PathIcon Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                                          Width="22" Height="22"
+                                          Foreground="{DynamicResource TextSecondary}"/>
+                            </Button>
+
+                            <StackPanel x:Name="ModActionsContainer"
+                                        Orientation="Horizontal"
+                                        Spacing="4"
+                                        VerticalAlignment="Center"
+                                        Width="128"
+                                        Opacity="1">
+                                <StackPanel.Transitions>
+                                    <Transitions>
+                                        <DoubleTransition Property="Width" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                                        <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                                    </Transitions>
+                                </StackPanel.Transitions>
+
+                                <Button x:Name="UpdateAllButton"
+                                        Classes="icon-btn"
+                                        Click="OnUpdateAllClick"
+                                        ToolTip.Tip="Check &amp; Update All Mods">
+                                    <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-4H8l4-4 4 4h-3v4z"
+                                              Width="22" Height="22"
+                                              Foreground="{DynamicResource TextSecondary}"/>
+                                </Button>
+
+                                <Button x:Name="CheckAllButton"
+                                        Classes="icon-btn"
+                                        Click="OnCheckAllClick"
+                                        ToolTip.Tip="Enable All Mods">
+                                    <PathIcon Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                              Width="22" Height="22"
+                                              Foreground="{DynamicResource TextSecondary}"/>
+                                </Button>
+
+                                <Button x:Name="UncheckAllButton"
+                                        Classes="icon-btn"
+                                        Click="OnUncheckAllClick"
+                                        ToolTip.Tip="Disable All Mods">
+                                    <PathIcon Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                              Width="22" Height="22"
+                                              Foreground="{DynamicResource TextSecondary}"/>
+                                </Button>
+                            </StackPanel>
+
+                            <Button x:Name="AddLocalModButton"
+                                    Classes="icon-btn"
+                                    Click="OnAddLocalModClick"
+                                    ToolTip.Tip="Add Mod">
+                                <PathIcon Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                                          Width="22" Height="22"
+                                          Foreground="{DynamicResource TextSecondary}"/>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Panel>
+
+            <Border Grid.Row="2"
+                    Background="{DynamicResource CardBgBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    ClipToBounds="True">
+                <Panel>
+                    
+                    <ContentControl x:Name="MainContentHost"
+                                    HorizontalContentAlignment="Stretch"
+                                    VerticalContentAlignment="Stretch"/>
+
+                    <Panel x:Name="ViewStashPanel" IsVisible="False">
+                        
+                        <Grid x:Name="ModsViewGrid">
+                        <ScrollViewer x:Name="ModsScrollViewer" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="ModsItemsControl" Margin="0,8">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:ModItem">
+                                        <Border Classes="list-item-row" Height="56" Padding="24,0" Background="Transparent" Margin="0,0">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding Name}"
+                                                           FontSize="15"
+                                                           FontWeight="Medium"
+                                                           Foreground="{DynamicResource TextPrimary}"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"/>
+
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                                    
+                                                    <TextBlock Text="{Binding Version}"
+                                                               FontSize="12"
+                                                               Foreground="{DynamicResource TextSecondary}"
+                                                               VerticalAlignment="Center"
+                                                               Width="52"
+                                                               TextAlignment="Right"/>
+
+                                                    <Button Classes="small-icon-btn"
+                                                            Tag="{Binding}"
+                                                            Click="OnModUpdateClick"
+                                                            IsVisible="{Binding HasUpdate}"
+                                                            ToolTip.Tip="Update Available">
+                                                        <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-4H8l4-4 4 4h-3v4z"
+                                                                  Width="18" Height="18"
+                                                                  Foreground="{DynamicResource PrimaryPurple}"/>
+                                                    </Button>
+
+                                                    <Button Classes="small-icon-btn"
+                                                            Tag="{Binding}"
+                                                            Click="OnModDeleteClick"
+                                                            ToolTip.Tip="Delete Mod">
+                                                        <PathIcon Data="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"
+                                                                  Width="18" Height="18"
+                                                                  Foreground="{DynamicResource PrimaryPurple}"/>
+                                                    </Button>
+
+                                                    <Border Classes="m3-checkbox"
+                                                            Classes.checked="{Binding Enabled}"
+                                                            Tag="{Binding}"
+                                                            PointerPressed="OnModCheckboxPressed"
+                                                            Margin="4,0,0,0">
+                                                        <PathIcon Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                                                  Width="14" Height="14"
+                                                                  Foreground="White"
+                                                                  IsVisible="{Binding Enabled}"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <StackPanel x:Name="ModsEmptyPanel"
+                                    Spacing="12"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    IsVisible="False">
+                            <Viewbox Width="48" Height="48">
+                                <Canvas Width="24" Height="24">
+                                    <Path Data="M3 7l9-5 9 5v10l-9 5-9-5V7z"
+                                          Stroke="{DynamicResource TextSecondary}"
+                                          StrokeThickness="2"
+                                          StrokeLineCap="Round"
+                                          StrokeJoin="Round"/>
+                                    <Path Data="M3.3 7l8.7 5 8.7-5 M12 12v10"
+                                          Stroke="{DynamicResource TextSecondary}"
+                                          StrokeThickness="2"
+                                          StrokeLineCap="Round"
+                                          StrokeJoin="Round"/>
+                                    <Path Data="M7.5 4.5l9 5"
+                                          Stroke="{DynamicResource TextSecondary}"
+                                          StrokeThickness="2"
+                                          StrokeLineCap="Round"
+                                          StrokeJoin="Round"/>
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock Text="No mods installed yet"
+                                       FontSize="15"
+                                       Foreground="{DynamicResource TextSecondary}"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <Border x:Name="BepInExMissingPanel"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                CornerRadius="24"
+                                Background="{DynamicResource SearchBgBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                Padding="40,32"
+                                MaxWidth="480"
+                                IsVisible="False">
+                            <StackPanel Spacing="16" HorizontalAlignment="Center">
+                                <Border Width="60" Height="60"
+                                        CornerRadius="30"
+                                        Background="{DynamicResource SecondaryContainer}"
+                                        HorizontalAlignment="Center">
+                                    <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+                                              Width="28" Height="28"
+                                              Foreground="{DynamicResource PrimaryPurple}"/>
+                                </Border>
+
+                                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                    <TextBlock Text="Mod loader is missing"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               TextAlignment="Center"
+                                               HorizontalAlignment="Center"/>
+                                    <Button x:Name="InstallBepInExButton"
+                                            Content="Install Mod Loader"
+                                            HorizontalAlignment="Center"
+                                            Padding="24,10"
+                                            Click="OnInstallBepInExClick"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Grid x:Name="ReposViewGrid">
+                        
+                        <ScrollViewer x:Name="ReposScrollViewer" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="12" Margin="12,8">
+                                <TextBlock x:Name="ReposEmptyPanel"
+                                           Text="No repository mods found"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource TextSecondary}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,8"
+                                           IsVisible="False"/>
+                                <ItemsControl x:Name="ReposItemsControl" Margin="0,8">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:RepoModItem">
+                                        <Border Classes="list-item-row" Height="56" Padding="24,0" Background="Transparent" Margin="0,0">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                
+                                                <Border Grid.Column="0"
+                                                        Width="40" Height="40"
+                                                        CornerRadius="20"
+                                                        Background="{DynamicResource PrimaryContainer}"
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,16,0">
+                                                    <TextBlock Text="{Binding Initial}"
+                                                               FontSize="16"
+                                                               FontWeight="Medium"
+                                                               Foreground="{DynamicResource OnPrimaryContainer}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <Grid Grid.Column="1" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="{Binding Name}"
+                                                               FontSize="15"
+                                                               FontWeight="Medium"
+                                                               Foreground="{DynamicResource TextPrimary}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,16,0"/>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding Description}"
+                                                               FontSize="13"
+                                                               Foreground="{DynamicResource TextTertiary}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"/>
+                                                </Grid>
+
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+
+                                                    <TextBlock Text="Update available"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource PrimaryPurple}"
+                                                               VerticalAlignment="Center"
+                                                               IsVisible="{Binding CanUpdate}"/>
+                                                    
+                                                    <TextBlock Text="{Binding Version}"
+                                                               FontSize="12"
+                                                               Foreground="{DynamicResource TextSecondary}"
+                                                               VerticalAlignment="Center"
+                                                               Width="52"
+                                                               TextAlignment="Right"/>
+
+                                                    <PathIcon IsVisible="{Binding IsInstalled}"
+                                                              Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                                              Width="18" Height="18"
+                                                              Foreground="#2E7D32"
+                                                              VerticalAlignment="Center"
+                                                              Margin="4,0"
+                                                              ToolTip.Tip="Installed"/>
+
+                                                    <Button Classes="small-icon-btn"
+                                                            Tag="{Binding}"
+                                                            Click="OnRepoModDownloadClick"
+                                                            ToolTip.Tip="{Binding DownloadTooltip}">
+                                                        <PathIcon Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                                                                  Width="18" Height="18"
+                                                                  Foreground="{DynamicResource PrimaryPurple}"/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                    </Grid>
+
+                    <Grid x:Name="SettingsViewGrid">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="28,16,28,14" Spacing="8">
+                                
+                                <StackPanel Spacing="8" Margin="0,4">
+                                    <TextBlock Text="Appearance &amp; Themes"
+                                               FontSize="13.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               Margin="6,0,0,0"/>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="6,2,0,4">
+                                        
+                                        <Button x:Name="DarkModeButton"
+                                                Click="OnThemeModeClick"
+                                                Tag="dark"
+                                                Height="40"
+                                                Padding="20,0"
+                                                CornerRadius="20"
+                                                Cursor="Hand">
+                                            <TextBlock Text="Dark Mode" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                                        </Button>
+
+                                        <Button x:Name="LightModeButton"
+                                                Click="OnThemeModeClick"
+                                                Tag="light"
+                                                Height="40"
+                                                Padding="20,0"
+                                                CornerRadius="20"
+                                                Cursor="Hand">
+                                            <TextBlock Text="Light Mode" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"/>
+                                        </Button>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Color Palette"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextSecondary}"
+                                               Margin="6,4,0,0"/>
+
+                                    <WrapPanel Margin="6,2,0,4">
+                                        <Button x:Name="PalettePinkBtn"
+                                                Click="OnPaletteClick"
+                                                Tag="pink"
+                                                Height="36"
+                                                Padding="14,0"
+                                                CornerRadius="18"
+                                                Margin="0,0,8,8"
+                                                Cursor="Hand">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <Ellipse Width="14" Height="14" Fill="#6750A4"/>
+                                                <TextBlock Text="pink" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Button x:Name="PaletteBlueBtn"
+                                                Click="OnPaletteClick"
+                                                Tag="blue"
+                                                Height="36"
+                                                Padding="14,0"
+                                                CornerRadius="18"
+                                                Margin="0,0,8,8"
+                                                Cursor="Hand">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <Ellipse Width="14" Height="14" Fill="#0061A4"/>
+                                                <TextBlock Text="blue" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Button x:Name="PaletteGreenBtn"
+                                                Click="OnPaletteClick"
+                                                Tag="green"
+                                                Height="36"
+                                                Padding="14,0"
+                                                CornerRadius="18"
+                                                Margin="0,0,8,8"
+                                                Cursor="Hand">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <Ellipse Width="14" Height="14" Fill="#006D44"/>
+                                                <TextBlock Text="green" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Button x:Name="PaletteAmberBtn"
+                                                Click="OnPaletteClick"
+                                                Tag="amber"
+                                                Height="36"
+                                                Padding="14,0"
+                                                CornerRadius="18"
+                                                Margin="0,0,8,8"
+                                                Cursor="Hand">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <Ellipse Width="14" Height="14" Fill="#775A00"/>
+                                                <TextBlock Text="amber" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Button x:Name="PaletteRedBtn"
+                                                Click="OnPaletteClick"
+                                                Tag="red"
+                                                Height="36"
+                                                Padding="14,0"
+                                                CornerRadius="18"
+                                                Margin="0,0,8,8"
+                                                Cursor="Hand">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <Ellipse Width="14" Height="14" Fill="#BA1A1A"/>
+                                                <TextBlock Text="red" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Button x:Name="PaletteTealBtn"
+                                                Click="OnPaletteClick"
+                                                Tag="teal"
+                                                Height="36"
+                                                Padding="14,0"
+                                                CornerRadius="18"
+                                                Margin="0,0,8,8"
+                                                Cursor="Hand">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <Ellipse Width="14" Height="14" Fill="#006874"/>
+                                                <TextBlock Text="teal" FontSize="12.5" FontWeight="Medium" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </WrapPanel>
+                                </StackPanel>
+
+                                <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4"/>
+
+                                <StackPanel Spacing="6" Margin="0,4">
+                                    <TextBlock Text="Gorilla Tag Game Directory"
+                                               FontSize="13.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               Margin="6,0,0,0"/>
+                                    <Grid ColumnDefinitions="*,12,Auto,8,Auto">
+                                        <TextBox Grid.Column="0"
+                                                 x:Name="GamePathBox"
+                                                 PlaceholderText="Select or auto-detect Gorilla Tag folder..."
+                                                 Height="44"
+                                                 CornerRadius="22"
+                                                 Background="{DynamicResource SearchBgBrush}"
+                                                 BorderThickness="0"
+                                                 Padding="18,0"
+                                                 FontSize="13.5"
+                                                 VerticalContentAlignment="Center"/>
+                                        <Button Grid.Column="2"
+                                                x:Name="AutoDetectPathButton"
+                                                Classes="settings-action-btn"
+                                                Click="OnAutoDetectPathClick"
+                                                ToolTip.Tip="Auto-detect Gorilla Tag via Steam">
+                                            <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"
+                                                      Width="20" Height="20"
+                                                      Foreground="{DynamicResource OnSecondaryContainer}"/>
+                                        </Button>
+                                        <Button Grid.Column="4"
+                                                x:Name="BrowsePathButton"
+                                                Classes="settings-action-btn"
+                                                Click="OnBrowsePathClick"
+                                                ToolTip.Tip="Browse for Gorilla Tag directory">
+                                            <PathIcon Data="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
+                                                      Width="22" Height="22"
+                                                      Foreground="{DynamicResource OnSecondaryContainer}"/>
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+
+                                <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4"/>
+
+                                <StackPanel Spacing="6" Margin="0,4">
+                                    <TextBlock Text="Launch Arguments"
+                                               FontSize="13.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               Margin="6,0,0,0"/>
+                                    <TextBox x:Name="LaunchArgsBox"
+                                             PlaceholderText="e.g. --no-vr -force-d3d11"
+                                             Height="44"
+                                             CornerRadius="22"
+                                             Background="{DynamicResource SearchBgBrush}"
+                                             BorderThickness="0"
+                                             Padding="18,0"
+                                             FontSize="13.5"
+                                             VerticalContentAlignment="Center"/>
+                                </StackPanel>
+
+                                <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4"/>
+
+                                <StackPanel Spacing="8" Margin="0,4">
+                                    <TextBlock Text="Repositories"
+                                               FontSize="13.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               Margin="6,0,0,0"/>
+                                    <ItemsControl x:Name="ConfiguredReposControl">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="models:RepoItem">
+                                                <Border Height="48"
+                                                        Padding="16,0,12,0"
+                                                        Background="{DynamicResource SearchBgBrush}"
+                                                        CornerRadius="18"
+                                                        Margin="0,2"
+                                                        ToolTip.Tip="{Binding Error}">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Name}"
+                                                                       FontSize="13.5"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource TextPrimary}"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding Url}"
+                                                                       FontSize="11.5"
+                                                                       Foreground="{DynamicResource TextTertiary}"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                        </StackPanel>
+                                                        <Button Grid.Column="1"
+                                                                Classes="small-icon-btn"
+                                                                Tag="{Binding}"
+                                                                Click="OnRepoDeleteClick"
+                                                                ToolTip.Tip="Remove Repository">
+                                                            <PathIcon Data="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"
+                                                                      Width="18" Height="18"
+                                                                      Foreground="{DynamicResource PrimaryPurple}"/>
+                                                        </Button>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Grid ColumnDefinitions="*,12,Auto">
+                                        <TextBox Grid.Column="0"
+                                                 x:Name="NewRepoUrlBox"
+                                                 PlaceholderText="Repository JSON URL or local path..."
+                                                 Height="44"
+                                                 CornerRadius="22"
+                                                 Background="{DynamicResource SearchBgBrush}"
+                                                 BorderThickness="0"
+                                                 Padding="18,0"
+                                                 FontSize="13.5"
+                                                 VerticalContentAlignment="Center"/>
+                                        <Button Grid.Column="2"
+                                                x:Name="AddRepoButton"
+                                                Classes="settings-action-btn"
+                                                Click="OnAddRepoClick"
+                                                ToolTip.Tip="Add Repository">
+                                            <PathIcon Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                                                      Width="22" Height="22"
+                                                      Foreground="{DynamicResource OnSecondaryContainer}"/>
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                    </Panel>
+                </Panel>
+            </Border>
+
+            <Border x:Name="FilterDropdownMenu"
+                    Grid.Row="0" Grid.RowSpan="3"
+                    ZIndex="1000"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Margin="0,64,0,0"
+                    Width="240"
+                    Background="{DynamicResource CardBgBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    BoxShadow="0 8 28 0 #33000000, 0 2 6 0 #1A000000"
+                    Padding="8"
+                    IsVisible="False"
+                    Opacity="0"
+                    RenderTransform="translateY(-8px)">
+                <Border.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut"/>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut"/>
+                    </Transitions>
+                </Border.Transitions>
+                <ItemsControl x:Name="FilterItemsControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="models:FilterDropdownItem">
+                            <Border Classes="dropdown-item"
+                                    Height="48"
+                                    CornerRadius="8"
+                                    Margin="0,1"
+                                    Padding="14,0"
+                                    Background="{Binding BackgroundColor}"
+                                    Cursor="Hand"
+                                    Tag="{Binding}"
+                                    PointerPressed="OnFilterItemPressed">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding Label}"
+                                               FontSize="14"
+                                               VerticalAlignment="Center"
+                                               Foreground="{Binding TextColor}"
+                                               FontWeight="{Binding FontWeight}"/>
+                                    <PathIcon Grid.Column="1"
+                                               Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                               Width="18" Height="18"
+                                               Foreground="{DynamicResource PrimaryPurple}"
+                                               IsVisible="{Binding IsSelected}"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </Grid>
+
+        <Popup x:Name="AddModPopup"
+               Placement="Bottom"
+               IsLightDismissEnabled="True">
+            <Border Padding="8"
+                    Background="{DynamicResource CardBgBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="18"
+                    BoxShadow="0 8 24 0 #33000000">
+                <Grid ColumnDefinitions="Auto,8,*,4,Auto"
+                      Width="380"
+                      VerticalAlignment="Center">
+                    <Button Grid.Column="0"
+                            Classes="icon-btn"
+                            Click="OnChooseLocalModFileClick"
+                            ToolTip.Tip="Install local DLL">
+                        <PathIcon Data="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm0 2.5L17.5 8H14V4.5zM6 20V4h6v6h6v10H6zm2-2h8v-2H8v2zm0-4h8v-2H8v2z"
+                                  Width="21" Height="21"
+                                  Foreground="{DynamicResource TextSecondary}"/>
+                    </Button>
+                    <TextBox Grid.Column="2"
+                             x:Name="GithubModUrlBox"
+                             Height="40"
+                             CornerRadius="20"
+                             Background="{DynamicResource SearchBgBrush}"
+                             BorderThickness="0"
+                             Padding="14,0"
+                             FontSize="13"
+                             VerticalContentAlignment="Center"
+                             PlaceholderText="GitHub release URL"/>
+                    <Button Grid.Column="4"
+                            Classes="icon-btn"
+                            Click="OnDownloadModFromGithubClick"
+                            ToolTip.Tip="Download GitHub mod">
+                        <PathIcon Data="M5 20v-2h14v2H5zm7-3L5.5 10.5 7 9l4 4V3h2v10l4-4 1.5 1.5L12 17z"
+                                  Width="21" Height="21"
+                                  Foreground="{DynamicResource PrimaryPurple}"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </Popup>
+
+        <Grid Grid.Column="2" RowDefinitions="Auto,*,Auto">
+            
+            <Button Grid.Row="0"
+                    x:Name="PlayFabButton"
+                    Classes="play-fab"
+                    Click="OnPlayClick"
+                    ToolTip.Tip="Launch Gorilla Tag">
+                <Viewbox Width="24" Height="24"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center">
+                    <Canvas Width="24" Height="24">
+                        <Polygon Points="9,5 19,12 9,19"
+                                 Fill="{DynamicResource PlayIconBrush}"/>
+                    </Canvas>
+                </Viewbox>
+            </Button>
+
+            <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="16">
+                
+                <Button x:Name="NavModsBtn"
+                        Classes="nav-squircle-btn active"
+                        Click="OnNavModsClick"
+                        ToolTip.Tip="Mods">
+                    <Viewbox Width="26" Height="26"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            
+                            <Path Data="M3 7l9-5 9 5v10l-9 5-9-5V7z"
+                                  
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeJoin="Round"/>
+                            
+                            <Path Data="M3.3 7l8.7 5 8.7-5 M12 12v10"
+                                  
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeJoin="Round"/>
+                            
+                            <Path Data="M7.5 4.5l9 5"
+                                  
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeJoin="Round"/>
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+
+                <Button x:Name="NavReposBtn"
+                        Classes="nav-squircle-btn"
+                        Click="OnNavReposClick"
+                        ToolTip.Tip="Repositories">
+                    <Viewbox Width="26" Height="26"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            
+                            <Ellipse Canvas.Left="3" Canvas.Top="2"
+                                     Width="18" Height="6"
+                                     
+                                     StrokeThickness="2"/>
+                            
+                            <Path Data="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5 M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"
+                                  
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeJoin="Round"/>
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+
+                <Button x:Name="NavSettingsBtn"
+                        Classes="nav-squircle-btn"
+                        Click="OnNavSettingsClick"
+                        ToolTip.Tip="Settings">
+                    <Viewbox Width="26" Height="26"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            
+                            <Path Data="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                                  
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeJoin="Round"/>
+                            
+                            <Ellipse Canvas.Left="9" Canvas.Top="9"
+                                     Width="6" Height="6"
+                                     
+                                     StrokeThickness="2"/>
+                        </Canvas>
+                    </Viewbox>
+                </Button>
+            </StackPanel>
+
+            <Button Grid.Row="2"
+                    x:Name="FolderFabButton"
+                    Classes="folder-fab"
+                    Click="OnOpenFolderClick"
+                    ToolTip.Tip="Open Mods Folder">
+                <PathIcon Data="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
+                          Width="26" Height="26"
+                          Foreground="{DynamicResource OnPrimaryContainer}"/>
+            </Button>
+        </Grid>
+
+        <Border x:Name="ToastNotificationPill"
+                Grid.Column="0" Grid.ColumnSpan="3"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Margin="0,0,0,24"
+                CornerRadius="20"
+                Background="#322F35"
+                BoxShadow="0 4 14 0 #40000000"
+                Padding="20,10"
+                IsVisible="False"
+                Opacity="0"
+                ZIndex="2000"
+                RenderTransform="translateY(20px)">
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Border.Transitions>
+            <TextBlock x:Name="ToastText"
+                       Text="Notification"
+                       FontSize="13.5"
+                       FontWeight="Medium"
+                       Foreground="#F4EFF4"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

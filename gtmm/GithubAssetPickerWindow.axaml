@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:services="clr-namespace:gtmm.Services"
+        x:Class="gtmm.GithubAssetPickerWindow"
+        Title="Choose GitHub Release Asset"
+        Width="520"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="24" Spacing="16">
+        <TextBlock Text="Choose the DLL or ZIP to track from this release. GTMM will follow the same asset name in later releases."
+                   TextWrapping="Wrap"/>
+        <ComboBox x:Name="AssetComboBox"
+                  MinHeight="42"
+                  HorizontalContentAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="services:GithubReleaseAsset">
+                    <TextBlock Text="{Binding Name}"
+                               TextTrimming="CharacterEllipsis"/>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="8">
+            <Button Content="Cancel"
+                    MinWidth="90"
+                    Click="OnCancelClick"/>
+            <Button Content="Track Asset"
+                    MinWidth="110"
+                    Click="OnTrackClick"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

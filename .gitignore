@@ -1,0 +1,28 @@
+# .NET build and publish outputs
+bin/
+obj/
+dist/
+
+# Local configs and user data
+.config/
+Mods/
+BepInEx/
+local.settings.json
+*.user
+*.suo
+*.userosv
+*.sln.docstates
+
+# Python build-script cache
+__pycache__/
+*.py[cod]
+
+# IDE and system files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+mwowgi*.log
