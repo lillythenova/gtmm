@@ -11,11 +11,11 @@ You can use it to:
 - Browse mod repositories and track GitHub releases for updates
 - Install the official BepInEx release directly when it is missing
 - Choose a light or dark theme
-- On Windows, choose whether to launch through `Gorilla Tag.exe` or Steam
+- Launch Gorilla Tag through Steam
 
 ## Get a build
 
-Download the latest build from the Releases section of the GitHub repository where this project is hosted. Linux releases include an x64 AppImage and standalone x64 and ARM64 executables.
+Download the latest build from the Releases section of the GitHub repository where this project is hosted. Releases include a Linux x64 AppImage, Linux x64 and ARM64 executables, and Windows x64 and ARM64 executables.
 
 The AppImage is a single file and does not need installation. It uses a generic launcher icon and still relies on system graphics libraries and OpenSSL 3. Linux builds are produced on Ubuntu 22.04, so older distributions with an older glibc may not run them.
 
@@ -52,4 +52,4 @@ To make a repository, run `python3 make_repo.py` for a simple GUI that creates t
 
 ## Publish a release
 
-The build workflow runs only when started manually. Open **Actions**, select **Build and release**, and run it on `main`. The version is incremented automatically, and the downloads are added to the Releases page.
+The build workflow runs when started manually. Open **Actions**, select **Build and release**, and run it on `main`. Leave the version input blank to increment the patch number from the latest stable release, or enter a version such as `1.2.3`. The workflow builds all supported executables, packages the Linux x64 AppImage, and attaches the files and generated release notes to a GitHub release.

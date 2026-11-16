@@ -1,0 +1,177 @@
+name: Build and release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (leave empty to increment the latest stable patch version)"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Select release version
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select version
+        id: version
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          version="${REQUESTED_VERSION#v}"
+          if [[ -z "$version" ]]; then
+            latest="$(git tag --list 'v[0-9]*' \
+              | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+              | sort -V \
+              | tail -n 1 || true)"
+
+            if [[ -z "$latest" ]]; then
+              version="$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' gtmm/gtmm.csproj | head -n 1)"
+            else
+              current="${latest#v}"
+              IFS='.' read -r major minor patch <<< "$current"
+              version="${major}.${minor}.$((patch + 1))"
+            fi
+          fi
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?([+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid version: $version" >&2
+            exit 1
+          fi
+
+          tag="v${version}"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists." >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Building release $tag"
+
+  linux:
+    name: Build Linux x64 and ARM64
+    needs: version
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Publish Linux builds
+        run: python3 build.py --linux --version "${{ needs.version.outputs.version }}"
+
+      - name: Install AppImage runtime dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libfuse2
+
+      - name: Package x64 AppImage
+        env:
+          APPIMAGETOOL: ${{ runner.temp }}/appimagetool
+        run: |
+          curl --fail --location --silent --show-error \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" \
+            --output "$APPIMAGETOOL"
+          chmod +x "$APPIMAGETOOL"
+          ./packaging/package_appimage.sh
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          cp dist/linux-x64/gtmm release-files/GTMM-linux-x64
+          cp dist/linux-arm64/gtmm release-files/GTMM-linux-arm64
+          cp dist/gtmm-linux-x86_64.AppImage release-files/GTMM-linux-x86_64.AppImage
+          chmod +x release-files/*
+
+      - name: Upload Linux release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release-files
+          path: release-files/*
+          if-no-files-found: error
+
+  windows:
+    name: Build Windows x64 and ARM64
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Publish Windows builds
+        run: python build.py --windows --version "${{ needs.version.outputs.version }}"
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-files | Out-Null
+          Copy-Item dist/win-x64/gtmm.exe release-files/GTMM-win-x64.exe
+          Copy-Item dist/win-arm64/gtmm.exe release-files/GTMM-win-arm64.exe
+
+      - name: Upload Windows release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-files
+          path: release-files/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    needs:
+      - version
+      - linux
+      - windows
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download release files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-release-files"
+          merge-multiple: true
+          path: release-files
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" release-files/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "GTMM ${RELEASE_TAG}" \
+            --generate-notes
