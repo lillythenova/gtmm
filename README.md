@@ -1,6 +1,7 @@
 # GTMM
 
-GTMM is a mod-manager for gorilla tag. yes this is most likely the thousandth mod manager for this stupid game; but this mod-manager has a repo system (sort of like cydia).
+GTMM is a mod-manager for gorilla tag.
+yes this is most likely the thousandth mod manager for this stupid game; but this mod-manager has a repo system (sort of like cydia).
 
 > **AI disclosure:** AI tools were used to help with this project. The UI was created by me.
 
