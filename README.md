@@ -49,7 +49,3 @@ The AppImage is created at `dist/gtmm-linux-x86_64.AppImage`.
 ## Mod repositories
 
 To make a repository, run `python3 make_repo.py` for a simple GUI that creates the JSON file. Host the file at a public HTTPS URL, then add that URL in **Settings → Repositories**. See the [repository guide](docs/creating-a-mod-repository.md) for details.
-
-## Publish a release
-
-The build workflow runs when started manually. Open **Actions**, select **Build and release**, and run it on `main`. Leave the version input blank to increment the patch number from the latest stable release, or enter a version such as `1.2.3`. The workflow builds all supported executables, packages the Linux x64 AppImage, and attaches the files and generated release notes to a GitHub release.
