@@ -86,6 +86,44 @@ public class GitHubReleaseService
         return false;
     }
 
+    public static bool TryParseLatestAssetUrl(
+        string url,
+        out string repository,
+        out string assetName)
+    {
+        repository = "";
+        assetName = "";
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            uri.Scheme != Uri.UriSchemeHttps ||
+            !uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string[] segments = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length != 6 ||
+            !segments[2].Equals("releases", StringComparison.OrdinalIgnoreCase) ||
+            !segments[3].Equals("latest", StringComparison.OrdinalIgnoreCase) ||
+            !segments[4].Equals("download", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string repoName = segments[1].EndsWith(".git", StringComparison.OrdinalIgnoreCase)
+            ? segments[1][..^4]
+            : segments[1];
+        string parsedRepository = $"{Uri.UnescapeDataString(segments[0])}/{Uri.UnescapeDataString(repoName)}";
+        string parsedAssetName = Uri.UnescapeDataString(segments[5]);
+        if (!IsValidRepository(parsedRepository) || string.IsNullOrWhiteSpace(parsedAssetName))
+        {
+            return false;
+        }
+
+        repository = parsedRepository;
+        assetName = parsedAssetName;
+        return true;
+    }
+
     public async Task<GithubReleaseInfo> GetLatestReleaseAsync(string repository)
     {
         return await GetReleaseAsync(repository, null);

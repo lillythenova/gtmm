@@ -3,16 +3,96 @@
 
 import json
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, unquote, urlsplit
 
 
 INVALID_FILENAME_CHARACTERS = set('<>:"/\\|?*')
 
 
+def parse_github_downloads(download_urls):
+    repository = None
+    assets = []
+    for download_url in download_urls:
+        parts = urlsplit(download_url)
+        segments = [unquote(segment) for segment in parts.path.strip("/").split("/") if segment]
+        if (
+            parts.scheme != "https"
+            or parts.netloc.lower() != "github.com"
+            or len(segments) not in (5, 6)
+            or segments[2].lower() != "releases"
+        ):
+            return None
+
+        if len(segments) == 6 and segments[3].lower() == "latest" and segments[4].lower() == "download":
+            asset = segments[5]
+        elif len(segments) == 5 and segments[3].lower() == "download":
+            asset = segments[4]
+        else:
+            return None
+
+        current_repository = f"https://github.com/{segments[0]}/{segments[1]}"
+        if repository is not None and current_repository.casefold() != repository.casefold():
+            return None
+        repository = current_repository
+        assets.append(asset)
+
+    return (repository, assets) if repository and assets else None
+
+
+def github_asset_urls(repository_url, asset_names, mod_name):
+    parts = urlsplit(repository_url.strip())
+    segments = [segment for segment in parts.path.strip("/").split("/") if segment]
+    if (
+        parts.scheme != "https"
+        or parts.netloc.lower() != "github.com"
+        or parts.username is not None
+        or parts.query
+        or parts.fragment
+        or len(segments) != 2
+        or any(segment in {".", ".."} for segment in segments)
+    ):
+        raise ValueError(f"Enter a GitHub repository URL for {mod_name}, such as https://github.com/owner/repository.")
+
+    assets = list(dict.fromkeys(asset.strip() for asset in asset_names if asset.strip()))
+    if not assets:
+        raise ValueError(f"Enter at least one release asset name for {mod_name}.")
+    for asset in assets:
+        if (
+            asset in {".", ".."}
+            or "/" in asset
+            or "\\" in asset
+            or any(ord(character) < 32 for character in asset)
+        ):
+            raise ValueError(f"Enter a file name only for each release asset in {mod_name}.")
+
+    repository_url = f"https://github.com/{segments[0]}/{segments[1].removesuffix('.git')}"
+    return repository_url, assets, [
+        f"{repository_url}/releases/latest/download/{quote(asset, safe='')}"
+        for asset in assets
+    ]
+
+
 def validate_mod(mod):
     name = str(mod.get("name", "")).strip()
     version = str(mod.get("version", "")).strip()
-    download_url = str(mod.get("download_url", "")).strip()
+    download_mode = mod.get("download_mode", "manual")
+    if download_mode not in {"manual", "github"}:
+        raise ValueError(f"Choose manual links or a GitHub release for {name or 'this mod'}.")
+    if download_mode == "github":
+        github_repository, github_assets, download_urls = github_asset_urls(
+            str(mod.get("github_repository", "")),
+            mod.get("github_assets", []),
+            name or "this mod",
+        )
+    else:
+        github_repository = ""
+        github_assets = []
+        download_urls = mod.get("download_urls")
+        if download_urls is None:
+            download_urls = [mod.get("download_url", "")]
+    if not isinstance(download_urls, list):
+        raise ValueError(f"Download links for {name or 'this mod'} must be a list.")
+    download_urls = list(dict.fromkeys(str(url).strip() for url in download_urls if str(url).strip()))
     dependencies = mod.get("dependencies", [])
     if isinstance(dependencies, str):
         dependencies = [dependency.strip() for dependency in dependencies.split(",") if dependency.strip()]
@@ -33,17 +113,28 @@ def validate_mod(mod):
         raise ValueError(f"Enter a version for {name}.")
     if any(dependency.casefold() == name.casefold() for dependency in dependencies):
         raise ValueError(f"{name} cannot depend on itself.")
-    parts = urlsplit(download_url)
-    if parts.scheme != "https" or not parts.netloc:
-        raise ValueError(f"Enter a complete HTTPS download link for {name}.")
+    if not download_urls:
+        raise ValueError(f"Add at least one download link for {name}.")
+    for download_url in download_urls:
+        parts = urlsplit(download_url)
+        if parts.scheme != "https" or not parts.netloc:
+            raise ValueError(f"Enter a complete HTTPS download link for {name}.")
 
-    return {
+    validated = {
         "name": name,
         "version": version,
         "description": str(mod.get("description", "")).strip(),
-        "download_url": download_url,
+        "author": str(mod.get("author", "")).strip(),
         "dependencies": dependencies,
+        "download_mode": download_mode,
+        "github_repository": github_repository,
+        "github_assets": github_assets,
     }
+    if len(download_urls) == 1:
+        validated["download_url"] = download_urls[0]
+    else:
+        validated["download_urls"] = download_urls
+    return validated
 
 
 def make_repo(repo_name, mods):
@@ -52,10 +143,20 @@ def make_repo(repo_name, mods):
         raise ValueError("Enter a repository name.")
     if not mods:
         raise ValueError("Add at least one mod.")
-    return {
-        "repo-name": repo_name,
-        "mods": [validate_mod(mod) for mod in mods],
-    }
+    validated_mods = []
+    for mod in mods:
+        validated = validate_mod(mod)
+        output = {
+            key: validated[key]
+            for key in ("name", "version", "description", "author", "dependencies")
+        }
+        download_urls = validated.get("download_urls", [validated.get("download_url", "")])
+        if len(download_urls) == 1:
+            output["download_url"] = download_urls[0]
+        else:
+            output["download_urls"] = download_urls
+        validated_mods.append(output)
+    return {"repo-name": repo_name, "mods": validated_mods}
 
 
 def load_repo(path):
@@ -82,15 +183,25 @@ def load_repo(path):
     for mod in mods:
         if not isinstance(mod, dict):
             raise ValueError("Each mod entry must be an object.")
-        normalized.append({
+        normalized_mod = {
             "name": str(mod.get("name", mod.get("mod-name", ""))),
             "version": str(mod.get("version", mod.get("mod-ver", "1.0.0"))),
             "description": str(mod.get("description", mod.get("mod-desc", ""))),
-            "download_url": str(
-                mod.get("download_url", mod.get("mod-link", mod.get("url", "")))
+            "author": str(mod.get("author", "")),
+            "download_urls": mod.get(
+                "download_urls",
+                [mod.get("download_url", mod.get("mod-link", mod.get("url", "")))],
             ),
             "dependencies": mod.get("dependencies", []),
-        })
+        }
+        source = parse_github_downloads(normalized_mod["download_urls"])
+        if source:
+            normalized_mod.update({
+                "download_mode": "github",
+                "github_repository": source[0],
+                "github_assets": source[1],
+            })
+        normalized.append(normalized_mod)
     return repo_name, normalized
 
 
@@ -111,7 +222,11 @@ def main():
             self.mod_name = tk.StringVar()
             self.version = tk.StringVar(value="1.0.0")
             self.description = tk.StringVar()
-            self.download_url = tk.StringVar()
+            self.author = tk.StringVar()
+            self.download_mode = tk.StringVar(value="Manual links")
+            self.download_urls = []
+            self.github_repository = tk.StringVar()
+            self.github_assets = []
             self.dependencies = tk.StringVar()
             self.form_mode = tk.StringVar(value="Add Mod")
 
@@ -162,22 +277,62 @@ def main():
                 row=1, column=1, columnspan=3, sticky="ew", pady=4
             )
 
-            ttk.Label(mod_frame, text="Download URL").grid(row=2, column=0, sticky="w", padx=(0, 8), pady=4)
-            ttk.Entry(mod_frame, textvariable=self.download_url).grid(
+            ttk.Label(mod_frame, text="Author").grid(row=2, column=0, sticky="w", padx=(0, 8), pady=4)
+            ttk.Entry(mod_frame, textvariable=self.author).grid(
                 row=2, column=1, columnspan=3, sticky="ew", pady=4
             )
-            ttk.Label(mod_frame, text="Dependencies").grid(row=3, column=0, sticky="w", padx=(0, 8), pady=4)
+
+            ttk.Label(mod_frame, text="Download method").grid(row=3, column=0, sticky="w", padx=(0, 8), pady=4)
+            self.download_mode_box = ttk.Combobox(
+                mod_frame,
+                textvariable=self.download_mode,
+                values=("Manual links", "GitHub release"),
+                state="readonly",
+                width=18,
+            )
+            self.download_mode_box.grid(row=3, column=1, sticky="w", pady=4)
+            self.download_mode_box.bind("<<ComboboxSelected>>", self.on_download_mode_changed)
+
+            ttk.Label(mod_frame, text="Download links").grid(row=4, column=0, sticky="nw", padx=(0, 8), pady=4)
+            self.source_fields = ttk.Frame(mod_frame)
+            self.source_fields.grid(row=4, column=1, columnspan=3, sticky="ew", pady=4)
+            self.source_fields.columnconfigure(0, weight=1)
+            self.manual_fields = ttk.Frame(self.source_fields)
+            self.manual_fields.grid(row=0, column=0, sticky="ew")
+            self.manual_fields.columnconfigure(0, weight=1)
+            self.github_fields = ttk.Frame(self.source_fields)
+            self.github_fields.grid(row=0, column=0, sticky="ew")
+            self.github_fields.columnconfigure(1, weight=1)
+            ttk.Label(self.github_fields, text="Repository URL").grid(
+                row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 4)
+            )
+            ttk.Entry(self.github_fields, textvariable=self.github_repository).grid(
+                row=0, column=1, columnspan=2, sticky="ew", pady=(0, 4)
+            )
+            ttk.Label(self.github_fields, text="Asset names").grid(
+                row=1, column=0, sticky="nw", padx=(0, 8), pady=2
+            )
+            self.github_assets_frame = ttk.Frame(self.github_fields)
+            self.github_assets_frame.grid(row=1, column=1, columnspan=2, sticky="ew")
+            self.github_assets_frame.columnconfigure(0, weight=1)
+            self.download_links_frame = ttk.Frame(self.manual_fields)
+            self.download_links_frame.grid(row=0, column=0, sticky="ew")
+            self.download_links_frame.columnconfigure(0, weight=1)
+            self.add_download_link_field()
+            self.add_github_asset_field()
+            self.show_download_mode()
+            ttk.Label(mod_frame, text="Dependencies").grid(row=5, column=0, sticky="w", padx=(0, 8), pady=4)
             ttk.Entry(mod_frame, textvariable=self.dependencies).grid(
-                row=3, column=1, columnspan=3, sticky="ew", pady=4
+                row=5, column=1, columnspan=3, sticky="ew", pady=4
             )
             ttk.Label(
                 mod_frame,
-                text="Direct HTTPS download link. Dependencies: comma-separated mod names.",
+                text="GitHub links are generated locally; no API calls or polling. Dependencies: comma-separated mod names.",
                 foreground="#666666",
-            ).grid(row=4, column=1, columnspan=3, sticky="w", pady=(0, 6))
+            ).grid(row=6, column=1, columnspan=3, sticky="w", pady=(0, 6))
 
             actions = ttk.Frame(mod_frame)
-            actions.grid(row=5, column=0, columnspan=4, sticky="e", pady=(4, 0))
+            actions.grid(row=7, column=0, columnspan=4, sticky="e", pady=(4, 0))
             ttk.Button(actions, text="Clear", command=self.clear_form).pack(side="left", padx=(0, 8))
             ttk.Button(actions, textvariable=self.form_mode, command=self.save_mod).pack(side="left")
 
@@ -185,18 +340,20 @@ def main():
             list_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 12))
             list_frame.columnconfigure(0, weight=1)
             list_frame.rowconfigure(0, weight=1)
-            columns = ("name", "version", "dependencies", "description", "download_url")
+            columns = ("name", "version", "author", "dependencies", "description", "downloads")
             self.tree = ttk.Treeview(list_frame, columns=columns, show="headings", selectmode="browse")
             self.tree.heading("name", text="Name")
             self.tree.heading("version", text="Version")
+            self.tree.heading("author", text="Author")
             self.tree.heading("dependencies", text="Dependencies")
             self.tree.heading("description", text="Description")
-            self.tree.heading("download_url", text="Download URL")
+            self.tree.heading("downloads", text="Download links")
             self.tree.column("name", width=150, minwidth=100)
             self.tree.column("version", width=90, minwidth=70)
+            self.tree.column("author", width=130, minwidth=90)
             self.tree.column("dependencies", width=150, minwidth=100)
             self.tree.column("description", width=200, minwidth=120)
-            self.tree.column("download_url", width=360, minwidth=160)
+            self.tree.column("downloads", width=360, minwidth=160)
             y_scroll = ttk.Scrollbar(list_frame, orient="vertical", command=self.tree.yview)
             x_scroll = ttk.Scrollbar(list_frame, orient="horizontal", command=self.tree.xview)
             self.tree.configure(yscrollcommand=y_scroll.set, xscrollcommand=x_scroll.set)
@@ -221,8 +378,8 @@ def main():
                 self.tree.insert(
                     "", "end", iid=str(index),
                     values=(
-                        mod["name"], mod["version"], ", ".join(mod["dependencies"]),
-                        mod["description"], mod["download_url"],
+                        mod["name"], mod["version"], mod["author"], ", ".join(mod["dependencies"]),
+                        mod["description"], ", ".join(mod.get("download_urls", [mod.get("download_url", "")])),
                     ),
                 )
 
@@ -231,7 +388,14 @@ def main():
             self.mod_name.set("")
             self.version.set("1.0.0")
             self.description.set("")
-            self.download_url.set("")
+            self.author.set("")
+            self.download_mode.set("manual")
+            self.github_repository.set("")
+            self.download_urls.clear()
+            self.github_assets.clear()
+            self.rebuild_download_link_fields()
+            self.rebuild_github_asset_fields()
+            self.show_download_mode()
             self.dependencies.set("")
             self.form_mode.set("Add Mod")
 
@@ -243,7 +407,26 @@ def main():
             self.mod_name.set(mod["name"])
             self.version.set(mod["version"])
             self.description.set(mod["description"])
-            self.download_url.set(mod["download_url"])
+            self.author.set(mod["author"])
+            self.download_mode.set(
+                "GitHub release" if mod.get("download_mode") == "github" else "Manual links"
+            )
+            self.github_repository.set(mod.get("github_repository", ""))
+            if self.download_mode.get() == "GitHub release":
+                for child in self.github_assets_frame.winfo_children():
+                    child.destroy()
+                self.github_assets.clear()
+                for asset in mod.get("github_assets", []):
+                    self.add_github_asset_field(asset)
+                if not self.github_assets:
+                    self.add_github_asset_field()
+            else:
+                for child in self.download_links_frame.winfo_children():
+                    child.destroy()
+                self.download_urls.clear()
+                for url in mod.get("download_urls", [mod.get("download_url", "")]):
+                    self.add_download_link_field(url)
+            self.show_download_mode()
             self.dependencies.set(", ".join(mod["dependencies"]))
             self.form_mode.set("Update Selected")
 
@@ -253,7 +436,13 @@ def main():
                     "name": self.mod_name.get(),
                     "version": self.version.get(),
                     "description": self.description.get(),
-                    "download_url": self.download_url.get(),
+                    "author": self.author.get(),
+                    "download_mode": (
+                        "github" if self.download_mode.get() == "GitHub release" else "manual"
+                    ),
+                    "download_urls": [variable.get() for variable in self.download_urls],
+                    "github_repository": self.github_repository.get(),
+                    "github_assets": [variable.get() for variable in self.github_assets],
                     "dependencies": self.dependencies.get(),
                 })
             except ValueError as error:
@@ -268,6 +457,75 @@ def main():
             self.refresh_list()
             self.clear_form()
             self.status.set(f"{len(self.mods)} mod(s) ready.")
+
+        def on_download_mode_changed(self, _event=None):
+            self.show_download_mode()
+
+        def show_download_mode(self):
+            if self.download_mode.get() == "GitHub release":
+                self.manual_fields.grid_remove()
+                self.github_fields.grid()
+            else:
+                self.github_fields.grid_remove()
+                self.manual_fields.grid()
+
+        def add_download_link_field(self, value=""):
+            row = len(self.download_urls)
+            variable = tk.StringVar(value=value)
+            self.download_urls.append(variable)
+            ttk.Entry(self.download_links_frame, textvariable=variable).grid(
+                row=row, column=0, sticky="ew", pady=2, padx=(0, 6)
+            )
+            ttk.Button(
+                self.download_links_frame, text="+", width=3,
+                command=self.add_download_link_field,
+            ).grid(row=row, column=1, padx=(0, 4))
+            if row:
+                ttk.Button(
+                    self.download_links_frame, text="−", width=3,
+                    command=lambda item=variable: self.remove_download_link_field(item),
+                ).grid(row=row, column=2)
+
+        def add_github_asset_field(self, value=""):
+            row = len(self.github_assets)
+            variable = tk.StringVar(value=value)
+            self.github_assets.append(variable)
+            ttk.Entry(self.github_assets_frame, textvariable=variable).grid(
+                row=row, column=0, sticky="ew", pady=2, padx=(0, 6)
+            )
+            ttk.Button(
+                self.github_assets_frame, text="+", width=3,
+                command=self.add_github_asset_field,
+            ).grid(row=row, column=1, padx=(0, 4))
+            if row:
+                ttk.Button(
+                    self.github_assets_frame, text="−", width=3,
+                    command=lambda item=variable: self.remove_github_asset_field(item),
+                ).grid(row=row, column=2)
+
+        def remove_download_link_field(self, variable):
+            self.download_urls.remove(variable)
+            self.rebuild_download_link_fields()
+
+        def remove_github_asset_field(self, variable):
+            self.github_assets.remove(variable)
+            self.rebuild_github_asset_fields()
+
+        def rebuild_download_link_fields(self):
+            values = [variable.get() for variable in self.download_urls] or [""]
+            for child in self.download_links_frame.winfo_children():
+                child.destroy()
+            self.download_urls.clear()
+            for value in values:
+                self.add_download_link_field(value)
+
+        def rebuild_github_asset_fields(self):
+            values = [variable.get() for variable in self.github_assets] or [""]
+            for child in self.github_assets_frame.winfo_children():
+                child.destroy()
+            self.github_assets.clear()
+            for value in values:
+                self.add_github_asset_field(value)
 
         def remove_mod(self):
             selected = self.tree.selection()

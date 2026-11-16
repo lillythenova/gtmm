@@ -436,7 +436,7 @@
                                 <ItemsControl x:Name="ReposItemsControl" Margin="0,8">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="models:RepoModItem">
-                                        <Border Classes="list-item-row" Height="56" Padding="24,0" Background="Transparent" Margin="0,0">
+                                        <Border Classes="list-item-row" Height="68" Padding="24,0" Background="Transparent" Margin="0,0">
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 
                                                 <Border Grid.Column="0"
@@ -453,21 +453,30 @@
                                                                VerticalAlignment="Center"/>
                                                 </Border>
 
-                                                <Grid Grid.Column="1" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                                    <TextBlock Grid.Column="0"
-                                                               Text="{Binding Name}"
-                                                               FontSize="15"
-                                                               FontWeight="Medium"
-                                                               Foreground="{DynamicResource TextPrimary}"
-                                                               VerticalAlignment="Center"
-                                                               Margin="0,0,16,0"/>
-                                                    <TextBlock Grid.Column="1"
-                                                               Text="{Binding Description}"
-                                                               FontSize="13"
+                                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                    <Grid ColumnDefinitions="Auto,*">
+                                                        <TextBlock Grid.Column="0"
+                                                                   Text="{Binding Name}"
+                                                                   FontSize="15"
+                                                                   FontWeight="Medium"
+                                                                   Foreground="{DynamicResource TextPrimary}"
+                                                                   VerticalAlignment="Center"
+                                                                   Margin="0,0,8,0"/>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="{Binding Description}"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource TextTertiary}"
+                                                                   TextWrapping="Wrap"
+                                                                   MaxLines="2"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                    <TextBlock Text="{Binding AuthorDisplay}"
+                                                               IsVisible="{Binding HasAuthor}"
+                                                               FontSize="11"
                                                                Foreground="{DynamicResource TextTertiary}"
-                                                               TextTrimming="CharacterEllipsis"
                                                                VerticalAlignment="Center"/>
-                                                </Grid>
+                                                </StackPanel>
 
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
 
@@ -695,6 +704,34 @@
                                              Padding="18,0"
                                              FontSize="13.5"
                                              VerticalContentAlignment="Center"/>
+                                </StackPanel>
+
+                                <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4"/>
+
+                                <StackPanel Spacing="6" Margin="0,4">
+                                    <TextBlock Text="Updates"
+                                               FontSize="13.5"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               Margin="6,0,0,0"/>
+                                    <CheckBox x:Name="AutoCheckUpdatesBox"
+                                              Content="Check for updates automatically"
+                                              Click="OnUpdateSettingsChanged"
+                                              Margin="6,2,0,0"/>
+                                    <TextBlock Text="Checks GitHub releases when GTMM starts. It only notifies you; updates are never installed automatically."
+                                               FontSize="11.5"
+                                               Foreground="{DynamicResource TextTertiary}"
+                                               Margin="28,0,6,2"
+                                               TextWrapping="Wrap"/>
+                                    <CheckBox x:Name="CheckGithubOnRefreshBox"
+                                              Content="Check GitHub releases when refreshing"
+                                              Click="OnUpdateSettingsChanged"
+                                              Margin="6,2,0,0"/>
+                                    <TextBlock Text="Makes one GitHub release check per unique repository when you click Refresh."
+                                               FontSize="11.5"
+                                               Foreground="{DynamicResource TextTertiary}"
+                                               Margin="28,0,6,2"
+                                               TextWrapping="Wrap"/>
                                 </StackPanel>
 
                                 <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4"/>

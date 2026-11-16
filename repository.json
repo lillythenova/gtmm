@@ -6,8 +6,19 @@
       "version": "2.1.5",
       "description": "Computer Interface is a library for Gorilla Tag which replaces the base computer with a custom computer, and allows developers to add functionality to it.",
       "author": "DecalFree",
-      "download_url": "https://github.com/DecalFree/ComputerInterface/releases/download/2.1.5/ComputerInterface-BepInEx.zip",
-      "dependencies": []
+      "dependencies": [],
+      "download_url": "https://github.com/DecalFree/ComputerInterface/releases/download/2.1.5/ComputerInterface-BepInEx.zip"
+    },
+    {
+      "name": "Gorilla Library",
+      "version": "1.1.0",
+      "description": "Essential general-purpose Gorilla Tag library for modding the game with BepInEx, packed with utilities and extensions for developers to use in their mods",
+      "author": "Gorilla Tag Modding Hub",
+      "dependencies": [],
+      "download_urls": [
+        "https://github.com/GorillaTagModdingHub/GorillaLibrary/releases/download/1.1.0/GorillaLibrary.dll",
+        "https://github.com/GorillaTagModdingHub/GorillaLibrary/releases/download/1.1.0/GorillaLibrary.Wardrobe.dll"
+      ]
     }
   ]
 }

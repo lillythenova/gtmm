@@ -112,6 +112,7 @@ public class RepoModItem : INotifyPropertyChanged
     private string _name = "";
     private string _version = "v1.0.0";
     private string _description = "";
+    private string _author = "";
     private string _downloadUrl = "";
     private string _repoName = "";
     private bool _isInstalled = false;
@@ -136,11 +137,22 @@ public class RepoModItem : INotifyPropertyChanged
         set => SetField(ref _description, value);
     }
 
+    public string Author
+    {
+        get => _author;
+        set => SetField(ref _author, value);
+    }
+
+    public string AuthorDisplay => string.IsNullOrWhiteSpace(Author) ? "" : $"by {Author}";
+    public bool HasAuthor => !string.IsNullOrWhiteSpace(Author);
+
     public string DownloadUrl
     {
         get => _downloadUrl;
         set => SetField(ref _downloadUrl, value);
     }
+
+    public List<string> DownloadUrls { get; set; } = new();
 
     public string RepoName
     {
@@ -155,6 +167,12 @@ public class RepoModItem : INotifyPropertyChanged
 
     [JsonIgnore]
     public string? GithubAssetName { get; set; }
+
+    [JsonIgnore]
+    public List<string> GithubAssetNames { get; set; } = new();
+
+    [JsonIgnore]
+    public string SourceRepositoryUrl { get; set; } = "";
 
     public bool IsInstalled
     {
@@ -273,6 +291,12 @@ public class AppConfig
 
     [JsonPropertyName("auto_check_updates")]
     public bool AutoCheckUpdates { get; set; } = true;
+
+    [JsonPropertyName("check_github_releases_on_refresh")]
+    public bool CheckGithubReleasesOnRefresh { get; set; } = true;
+
+    [JsonPropertyName("installed_mod_versions")]
+    public Dictionary<string, string> InstalledModVersions { get; set; } = new();
 
     [JsonPropertyName("theme")]
     public string Theme

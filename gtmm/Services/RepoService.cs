@@ -89,7 +89,9 @@ public class RepoService
         string name = "";
         string ver = "v1.0.0";
         string desc = "";
+        string author = "";
         string url = "";
+        var downloadUrls = new List<string>();
         var dependencies = new List<string>();
 
         if (el.TryGetProperty("mod-name", out var np) || el.TryGetProperty("name", out np))
@@ -101,8 +103,41 @@ public class RepoService
         if (el.TryGetProperty("mod-desc", out var dp) || el.TryGetProperty("description", out dp))
             desc = dp.GetString() ?? "";
 
+        if (el.TryGetProperty("author", out var authorElement))
+        {
+            if (authorElement.ValueKind != JsonValueKind.String)
+            {
+                throw new InvalidDataException($"Author for '{name}' must be a string.");
+            }
+
+            author = authorElement.GetString()?.Trim() ?? "";
+        }
+
         if (el.TryGetProperty("mod-link", out var lp) || el.TryGetProperty("download_url", out lp) || el.TryGetProperty("url", out lp))
             url = lp.GetString() ?? "";
+
+        if (el.TryGetProperty("download_urls", out var downloadUrlsElement))
+        {
+            if (downloadUrlsElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new InvalidDataException($"Download links for '{name}' must be an array of URLs.");
+            }
+
+            foreach (var downloadUrl in downloadUrlsElement.EnumerateArray())
+            {
+                if (downloadUrl.ValueKind != JsonValueKind.String ||
+                    string.IsNullOrWhiteSpace(downloadUrl.GetString()))
+                {
+                    throw new InvalidDataException($"Download links for '{name}' must contain non-empty URLs.");
+                }
+
+                downloadUrls.Add(downloadUrl.GetString()!.Trim());
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(url))
+        {
+            downloadUrls.Add(url);
+        }
 
         if (el.TryGetProperty("dependencies", out var dependenciesElement))
         {
@@ -128,7 +163,9 @@ public class RepoService
             Name = name,
             Version = ver,
             Description = desc,
+            Author = author,
             DownloadUrl = url,
+            DownloadUrls = downloadUrls,
             RepoName = repoName,
             Dependencies = dependencies
         };

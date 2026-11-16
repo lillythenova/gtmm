@@ -170,25 +170,31 @@ public class ModService
             }
 
             gamePath ??= Path.GetFullPath(Path.Combine(modsDir, "..", ".."));
+            if (repoMod.DownloadUrls.Count > 1)
+            {
+                return await InstallMultipleDllsAsync(modsDir, repoMod);
+            }
+
             string targetPath = GetSafeFilePath(modsDir, $"{repoMod.Name}.dll");
-            if (string.IsNullOrWhiteSpace(repoMod.DownloadUrl)) return false;
+            string downloadUrl = repoMod.DownloadUrls.FirstOrDefault() ?? repoMod.DownloadUrl;
+            if (string.IsNullOrWhiteSpace(downloadUrl)) return false;
 
             byte[]? data = null;
 
-            if (repoMod.DownloadUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                repoMod.DownloadUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            if (downloadUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                downloadUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
-                data = await HttpClient.GetByteArrayAsync(repoMod.DownloadUrl);
+                data = await HttpClient.GetByteArrayAsync(downloadUrl);
             }
-            else if (File.Exists(repoMod.DownloadUrl))
+            else if (File.Exists(downloadUrl))
             {
-                data = await File.ReadAllBytesAsync(repoMod.DownloadUrl);
+                data = await File.ReadAllBytesAsync(downloadUrl);
             }
 
             if (data != null && data.Length > 0)
             {
                 bool isZip = data.Length > 4 && data[0] == 0x50 && data[1] == 0x4B && data[2] == 0x03 && data[3] == 0x04;
-                if (isZip || repoMod.DownloadUrl.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                if (isZip || downloadUrl.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                 {
                     using var ms = new MemoryStream(data);
                     using var archive = new ZipArchive(ms, ZipArchiveMode.Read);
@@ -252,10 +258,114 @@ public class ModService
 
             return false;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.Error.WriteLine($"Failed to install '{repoMod.Name}': {ex}");
             return false;
         }
+    }
+
+    private static async Task<bool> InstallMultipleDllsAsync(string modsDir, RepoModItem repoMod)
+    {
+        var files = new List<(string Name, byte[] Data)>();
+        var fileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string downloadUrl in repoMod.DownloadUrls)
+        {
+            string fileName = GetDownloadFileName(downloadUrl);
+            if (!fileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidDataException($"'{fileName}' is not a DLL file.");
+            }
+            if (!fileNames.Add(fileName))
+            {
+                throw new InvalidDataException($"The mod has more than one download named '{fileName}'.");
+            }
+
+            byte[] data;
+            if (Uri.TryCreate(downloadUrl, UriKind.Absolute, out var uri) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                data = await HttpClient.GetByteArrayAsync(uri);
+            }
+            else if (File.Exists(downloadUrl))
+            {
+                data = await File.ReadAllBytesAsync(downloadUrl);
+            }
+            else
+            {
+                throw new FileNotFoundException($"Could not find download '{downloadUrl}'.");
+            }
+
+            if (data.Length == 0)
+            {
+                throw new InvalidDataException($"The download '{fileName}' was empty.");
+            }
+            files.Add((fileName, data));
+        }
+
+        string packagePath = GetSafeFilePath(modsDir, repoMod.Name);
+        string packageParent = Path.GetDirectoryName(Path.GetFullPath(modsDir))!;
+        string stagingPath = GetSafeFilePath(packageParent, $".{repoMod.Name}.{Guid.NewGuid():N}.tmp");
+        string backupPath = GetSafeFilePath(packageParent, $".{repoMod.Name}.{Guid.NewGuid():N}.bak");
+        bool existingMoved = false;
+        bool stagingMoved = false;
+        try
+        {
+            Directory.CreateDirectory(stagingPath);
+            foreach (var file in files)
+            {
+                await File.WriteAllBytesAsync(GetSafeFilePath(stagingPath, file.Name), file.Data);
+            }
+
+            if (Directory.Exists(packagePath))
+            {
+                Directory.Move(packagePath, backupPath);
+                existingMoved = true;
+            }
+            else if (File.Exists(packagePath))
+            {
+                throw new IOException($"A file already exists at the install path for '{repoMod.Name}'.");
+            }
+
+            Directory.Move(stagingPath, packagePath);
+            stagingMoved = true;
+            if (existingMoved)
+            {
+                Directory.Delete(backupPath, recursive: true);
+                existingMoved = false;
+            }
+            return true;
+        }
+        catch
+        {
+            if (stagingMoved && Directory.Exists(packagePath))
+            {
+                Directory.Delete(packagePath, recursive: true);
+            }
+            if (existingMoved && Directory.Exists(backupPath) && !Directory.Exists(packagePath))
+            {
+                Directory.Move(backupPath, packagePath);
+            }
+            throw;
+        }
+        finally
+        {
+            if (Directory.Exists(stagingPath))
+            {
+                Directory.Delete(stagingPath, recursive: true);
+            }
+        }
+    }
+
+    private static string GetDownloadFileName(string downloadUrl)
+    {
+        if (Uri.TryCreate(downloadUrl, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        {
+            return Path.GetFileName(Uri.UnescapeDataString(uri.AbsolutePath));
+        }
+
+        return Path.GetFileName(downloadUrl);
     }
 
     private static string GetSafeFilePath(string directory, string fileName)

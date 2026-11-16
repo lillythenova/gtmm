@@ -36,6 +36,9 @@ public partial class MainWindow : Window
     private string _repoFilter = "all";
     private readonly List<ModItem> _allInstalledMods = new();
     private readonly List<RepoModItem> _allRepoMods = new();
+    private readonly Dictionary<string, GithubReleaseInfo> _githubReleaseCache =
+        new(StringComparer.OrdinalIgnoreCase);
+    private int _githubCheckFailures;
 
     public ObservableCollection<ModItem> FilteredMods { get; } = new();
     public ObservableCollection<RepoModItem> FilteredRepoMods { get; } = new();
@@ -98,6 +101,8 @@ public partial class MainWindow : Window
         Loaded += async (s, e) =>
         {
             _configService.Load();
+            AutoCheckUpdatesBox.IsChecked = _configService.Config.AutoCheckUpdates;
+            CheckGithubOnRefreshBox.IsChecked = _configService.Config.CheckGithubReleasesOnRefresh;
             if (!_configService.Config.Repositories.Any(repo =>
                     repo.Url.Equals(DefaultRepositoryUrl, StringComparison.OrdinalIgnoreCase)))
             {
@@ -147,17 +152,20 @@ public partial class MainWindow : Window
             ThemeService.ApplyTheme(_configService.Config.ThemeMode, _configService.Config.ThemePalette);
             UpdateThemeUI();
 
-            await ReloadAllAsync();
+            await ReloadAllAsync(_configService.Config.AutoCheckUpdates);
             SwitchTab(_activeTab);
             BuildFilterDropdown(); 
         };
     }
 
-    private async Task ReloadAllAsync()
+    private async Task ReloadAllAsync(bool checkGithubReleases = false)
     {
         _allRepoMods.Clear();
         ConfiguredRepos.Clear();
         int sourceFailures = 0;
+        _githubCheckFailures = 0;
+        var releasesCheckedThisRefresh = new Dictionary<string, GithubReleaseInfo>(
+            StringComparer.OrdinalIgnoreCase);
 
         foreach (var repo in _configService.Config.Repositories)
         {
@@ -169,29 +177,55 @@ public partial class MainWindow : Window
                 if (!string.IsNullOrWhiteSpace(repo.GithubRepository) &&
                     !string.IsNullOrWhiteSpace(repo.GithubAssetName))
                 {
-                    var release = await _githubReleaseService.GetLatestReleaseAsync(repo.GithubRepository);
-                    var asset = release.Assets.FirstOrDefault(candidate =>
-                        candidate.Name.Equals(repo.GithubAssetName, StringComparison.OrdinalIgnoreCase));
-                    if (asset == null)
+                    GithubReleaseInfo? release = null;
+                    if (checkGithubReleases)
                     {
-                        throw new InvalidOperationException(
-                            $"Asset '{repo.GithubAssetName}' is missing from release {release.TagName}.");
+                        if (!releasesCheckedThisRefresh.TryGetValue(repo.GithubRepository, out release))
+                        {
+                            try
+                            {
+                                release = await _githubReleaseService.GetLatestReleaseAsync(repo.GithubRepository);
+                                releasesCheckedThisRefresh[repo.GithubRepository] = release;
+                                _githubReleaseCache[repo.GithubRepository] = release;
+                            }
+                            catch (Exception ex)
+                            {
+                                _githubCheckFailures++;
+                                Console.Error.WriteLine(
+                                    $"Failed to check GitHub release for '{repo.GithubRepository}': {ex}");
+                                _githubReleaseCache.TryGetValue(repo.GithubRepository, out release);
+                            }
+                        }
+                    }
+                    else if (!_githubReleaseCache.TryGetValue(repo.GithubRepository, out release))
+                    {
+                        release = null;
                     }
 
+                    var asset = release?.Assets.FirstOrDefault(candidate =>
+                        candidate.Name.Equals(repo.GithubAssetName, StringComparison.OrdinalIgnoreCase));
+                    if (release != null && asset == null)
+                    {
+                        _githubCheckFailures++;
+                        Console.Error.WriteLine(
+                            $"GitHub release '{release.TagName}' for '{repo.GithubRepository}' has no asset '{repo.GithubAssetName}'.");
+                    }
                     repo.Name = $"{repo.GithubRepository} · {repo.GithubAssetName}";
                     _allRepoMods.Add(new RepoModItem
                     {
                         Name = repo.GithubAssetName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
                             ? Path.GetFileNameWithoutExtension(repo.GithubAssetName)
                             : repo.GithubRepository.Split('/').Last(),
-                        Version = release.TagName,
-                        Description = string.IsNullOrWhiteSpace(release.Name)
+                        Version = release?.TagName ?? repo.InstalledVersion ?? "latest",
+                        Description = string.IsNullOrWhiteSpace(release?.Name)
                             ? $"GitHub release from {repo.GithubRepository}"
                             : release.Name,
-                        DownloadUrl = asset.DownloadUrl,
+                        DownloadUrl = asset?.DownloadUrl ??
+                                      $"https://github.com/{repo.GithubRepository}/releases/latest/download/{Uri.EscapeDataString(repo.GithubAssetName)}",
                         RepoName = repo.Name,
                         GithubRepository = repo.GithubRepository,
                         GithubAssetName = repo.GithubAssetName,
+                        SourceRepositoryUrl = repo.Url,
                         IsInstalled = false,
                         InstalledVersion = repo.InstalledVersion ?? "",
                         CanUpdate = false
@@ -232,6 +266,10 @@ public partial class MainWindow : Window
                 {
                     repo.Name = repoParsedMods[0].RepoName;
                 }
+                foreach (var repoMod in repoParsedMods)
+                {
+                    repoMod.SourceRepositoryUrl = repo.Url;
+                }
                 _allRepoMods.AddRange(repoParsedMods);
             }
             catch (Exception ex)
@@ -243,6 +281,8 @@ public partial class MainWindow : Window
 
             ConfiguredRepos.Add(repo);
         }
+
+        await RefreshGithubReleaseMetadataAsync(checkGithubReleases, releasesCheckedThisRefresh);
 
         _allInstalledMods.Clear();
         var loaderStatus = SteamDetectorService.VerifyBepInEx(_configService.Config.GamePath);
@@ -258,6 +298,16 @@ public partial class MainWindow : Window
         {
             if (repoMod.GithubRepository != null)
             {
+                if (repoMod.GithubAssetNames.Count > 0 &&
+                    !string.IsNullOrEmpty(repoMod.SourceRepositoryUrl))
+                {
+                    string versionKey = GetInstalledVersionKey(repoMod);
+                    if (_configService.Config.InstalledModVersions.TryGetValue(versionKey, out string? installedVersion))
+                    {
+                        repoMod.InstalledVersion = installedVersion;
+                    }
+                }
+
                 var installed = _allInstalledMods.FirstOrDefault(mod =>
                     mod.Name.Equals(repoMod.Name, StringComparison.OrdinalIgnoreCase));
                 if (installed != null)
@@ -299,6 +349,119 @@ public partial class MainWindow : Window
         {
             ShowToast($"Could not refresh {sourceFailures} source(s). Check Repositories.", true);
         }
+        else if (_githubCheckFailures > 0)
+        {
+            ShowToast($"Could not check {_githubCheckFailures} GitHub release(s). Check your connection or GitHub rate limit.", true);
+        }
+
+        if (checkGithubReleases)
+        {
+            int availableUpdates = _allRepoMods.Count(repoMod =>
+                repoMod.GithubRepository != null && repoMod.IsInstalled && repoMod.CanUpdate);
+            if (availableUpdates > 0)
+            {
+                ShowToast($"{availableUpdates} GitHub mod update(s) available");
+            }
+        }
+    }
+
+    private async Task RefreshGithubReleaseMetadataAsync(
+        bool checkGithubReleases,
+        Dictionary<string, GithubReleaseInfo> releasesCheckedThisRefresh)
+    {
+        var releaseMods = new List<(RepoModItem Mod, string Repository, List<string> AssetNames)>();
+        foreach (var mod in _allRepoMods)
+        {
+            var parsedAssets = mod.DownloadUrls
+                .Select(url => GitHubReleaseService.TryParseLatestAssetUrl(
+                    url, out string repository, out string assetName)
+                    ? (Success: true, Repository: repository, AssetName: assetName)
+                    : (Success: false, Repository: "", AssetName: ""))
+                .ToList();
+            if (parsedAssets.Count == 0 || parsedAssets.Any(asset => !asset.Success))
+            {
+                continue;
+            }
+
+            string repository = parsedAssets[0].Repository;
+            if (parsedAssets.Any(asset =>
+                    !asset.Repository.Equals(repository, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var assetNames = parsedAssets.Select(asset => asset.AssetName).ToList();
+            mod.GithubRepository = repository;
+            mod.GithubAssetNames = assetNames;
+            mod.GithubAssetName = assetNames.Count == 1 ? assetNames[0] : null;
+            releaseMods.Add((mod, repository, assetNames));
+        }
+
+        if (checkGithubReleases)
+        {
+            foreach (string repository in releaseMods
+                         .Select(item => item.Repository)
+                         .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (releasesCheckedThisRefresh.ContainsKey(repository))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var release = await _githubReleaseService.GetLatestReleaseAsync(repository);
+                    releasesCheckedThisRefresh[repository] = release;
+                    _githubReleaseCache[repository] = release;
+                }
+                catch (Exception ex)
+                {
+                    _githubCheckFailures++;
+                    Console.Error.WriteLine($"Failed to check GitHub release for '{repository}': {ex}");
+                }
+            }
+        }
+
+        foreach (var (mod, repository, assetNames) in releaseMods)
+        {
+            if (!_githubReleaseCache.TryGetValue(repository, out var release))
+            {
+                continue;
+            }
+
+            var resolvedAssets = new List<GithubReleaseAsset>();
+            foreach (string assetName in assetNames)
+            {
+                var asset = release.Assets.FirstOrDefault(candidate =>
+                    candidate.Name.Equals(assetName, StringComparison.OrdinalIgnoreCase));
+                if (asset == null)
+                {
+                    if (checkGithubReleases)
+                    {
+                        _githubCheckFailures++;
+                        Console.Error.WriteLine(
+                            $"GitHub release '{release.TagName}' for '{repository}' has no asset '{assetName}'.");
+                    }
+                    resolvedAssets.Clear();
+                    break;
+                }
+                resolvedAssets.Add(asset);
+            }
+
+            if (resolvedAssets.Count != assetNames.Count)
+            {
+                continue;
+            }
+
+            mod.Version = release.TagName;
+            mod.DownloadUrls = resolvedAssets.Select(asset => asset.DownloadUrl).ToList();
+            mod.DownloadUrl = mod.DownloadUrls[0];
+        }
+    }
+
+    private static string GetInstalledVersionKey(RepoModItem mod)
+    {
+        return $"{mod.SourceRepositoryUrl}\n{mod.Name}";
     }
 
     private void ApplyFilters()
@@ -560,13 +723,24 @@ public partial class MainWindow : Window
 
     private async void OnRefreshClick(object? sender, RoutedEventArgs e)
     {
-        await ReloadAllAsync();
+        await ReloadAllAsync(_configService.Config.CheckGithubReleasesOnRefresh);
         int failures = _configService.Config.Repositories.Count(repo =>
             repo.Enabled && !string.IsNullOrEmpty(repo.Error));
-        ShowToast(failures == 0
-            ? "Reloaded mods & repositories"
-            : $"Reloaded with {failures} source error(s); check Repositories",
-            failures > 0);
+        if (failures > 0)
+        {
+            ShowToast($"Reloaded with {failures} source error(s); check Repositories", true);
+        }
+        else if (_githubCheckFailures == 0)
+        {
+            ShowToast("Reloaded mods & repositories");
+        }
+    }
+
+    private void OnUpdateSettingsChanged(object? sender, RoutedEventArgs e)
+    {
+        _configService.Config.AutoCheckUpdates = AutoCheckUpdatesBox.IsChecked == true;
+        _configService.Config.CheckGithubReleasesOnRefresh = CheckGithubOnRefreshBox.IsChecked == true;
+        _configService.Save();
     }
 
     private async void OnUpdateAllClick(object? sender, RoutedEventArgs e)
@@ -1079,6 +1253,11 @@ public partial class MainWindow : Window
 
             installedNames.Add(item.Name);
             installedNow.Add(item.Name);
+            if (item.GithubAssetNames.Count > 0 && !string.IsNullOrEmpty(item.SourceRepositoryUrl))
+            {
+                _configService.Config.InstalledModVersions[GetInstalledVersionKey(item)] = item.Version;
+                item.InstalledVersion = item.Version;
+            }
             if (item.GithubRepository != null)
             {
                 var source = _configService.Config.Repositories.FirstOrDefault(repo =>
