@@ -98,7 +98,7 @@ jobs:
             "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" \
             --output "$APPIMAGETOOL"
           chmod +x "$APPIMAGETOOL"
-          ./packaging/package_appimage.sh
+          bash ./packaging/package_appimage.sh
 
       - name: Prepare release files
         run: |
