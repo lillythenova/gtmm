@@ -295,6 +295,9 @@ public class AppConfig
     [JsonPropertyName("check_github_releases_on_refresh")]
     public bool CheckGithubReleasesOnRefresh { get; set; } = true;
 
+    [JsonPropertyName("auto_update_manager")]
+    public bool AutoUpdateManager { get; set; }
+
     [JsonPropertyName("installed_mod_versions")]
     public Dictionary<string, string> InstalledModVersions { get; set; } = new();
 

@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private readonly ModService _modService = new();
     private readonly RepoService _repoService = new();
     private readonly GitHubReleaseService _githubReleaseService = new();
+    private readonly ManagerUpdateService _managerUpdateService = new();
     private readonly BepInExInstallerService _bepInExInstallerService = new();
 
     private string _activeTab = "mods";
@@ -39,6 +40,8 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, GithubReleaseInfo> _githubReleaseCache =
         new(StringComparer.OrdinalIgnoreCase);
     private int _githubCheckFailures;
+    private ManagerUpdateInfo? _managerUpdate;
+    private bool _managerUpdateInProgress;
 
     public ObservableCollection<ModItem> FilteredMods { get; } = new();
     public ObservableCollection<RepoModItem> FilteredRepoMods { get; } = new();
@@ -103,6 +106,7 @@ public partial class MainWindow : Window
             _configService.Load();
             AutoCheckUpdatesBox.IsChecked = _configService.Config.AutoCheckUpdates;
             CheckGithubOnRefreshBox.IsChecked = _configService.Config.CheckGithubReleasesOnRefresh;
+            AutoUpdateManagerBox.IsChecked = _configService.Config.AutoUpdateManager;
             if (!_configService.Config.Repositories.Any(repo =>
                     repo.Url.Equals(DefaultRepositoryUrl, StringComparison.OrdinalIgnoreCase)))
             {
@@ -131,6 +135,7 @@ public partial class MainWindow : Window
             }
 
             GamePathBox.Text = _configService.Config.GamePath;
+            EnsureLinuxBepInExLaunchOptions();
             GamePathBox.LostFocus += async (sender, args) =>
             {
                 string newPath = (GamePathBox.Text ?? "").Trim();
@@ -138,6 +143,7 @@ public partial class MainWindow : Window
                 {
                     _configService.Config.GamePath = newPath;
                     _configService.Save();
+                    EnsureLinuxBepInExLaunchOptions();
                     await ReloadAllAsync();
                 }
             };
@@ -153,6 +159,7 @@ public partial class MainWindow : Window
             UpdateThemeUI();
 
             await ReloadAllAsync(_configService.Config.AutoCheckUpdates);
+            _ = CheckForManagerUpdateAsync();
             SwitchTab(_activeTab);
             BuildFilterDropdown(); 
         };
@@ -690,7 +697,7 @@ public partial class MainWindow : Window
             TopControlsRow.IsHitTestVisible = true;
 
             bool isMods = tab == "mods";
-            ModActionsContainer.Width = isMods ? 136 : 0;
+            ModActionsContainer.Width = isMods ? 128 : 0;
             ModActionsContainer.Opacity = isMods ? 1 : 0;
             ModActionsContainer.IsHitTestVisible = isMods;
 
@@ -757,7 +764,79 @@ public partial class MainWindow : Window
     {
         _configService.Config.AutoCheckUpdates = AutoCheckUpdatesBox.IsChecked == true;
         _configService.Config.CheckGithubReleasesOnRefresh = CheckGithubOnRefreshBox.IsChecked == true;
+        _configService.Config.AutoUpdateManager = AutoUpdateManagerBox.IsChecked == true;
         _configService.Save();
+
+        if (_configService.Config.AutoUpdateManager && _managerUpdate != null)
+        {
+            _ = InstallManagerUpdateAsync();
+        }
+    }
+
+    private async Task CheckForManagerUpdateAsync()
+    {
+        ManagerUpdateStatusText.Text = "Checking whether GTMM has an update...";
+        try
+        {
+            _managerUpdate = await _managerUpdateService.CheckForUpdateAsync();
+            if (_managerUpdate == null)
+            {
+                ManagerUpdateStatusText.Text = "GTMM is up to date.";
+                UpdateManagerButton.IsVisible = false;
+                return;
+            }
+
+            if (_managerUpdate.Asset == null)
+            {
+                ManagerUpdateStatusText.Text =
+                    $"GTMM {_managerUpdate.Version} is available, but there is no update for this kind of computer.";
+                UpdateManagerButton.IsVisible = false;
+                return;
+            }
+
+            ManagerUpdateStatusText.Text = $"A newer version of GTMM ({_managerUpdate.Version}) is ready.";
+            UpdateManagerButton.Content = $"Update GTMM to v{_managerUpdate.Version}";
+            UpdateManagerButton.IsVisible = true;
+            if (_configService.Config.AutoUpdateManager)
+            {
+                await InstallManagerUpdateAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            ManagerUpdateStatusText.Text = $"Could not check for updates. Check your internet connection. Details: {ex.Message}";
+        }
+    }
+
+    private async void OnUpdateManagerClick(object? sender, RoutedEventArgs e)
+    {
+        await InstallManagerUpdateAsync();
+    }
+
+    private async Task InstallManagerUpdateAsync()
+    {
+        if (_managerUpdateInProgress || _managerUpdate?.Asset == null)
+        {
+            return;
+        }
+
+        _managerUpdateInProgress = true;
+        UpdateManagerButton.IsEnabled = false;
+        AutoUpdateManagerBox.IsEnabled = false;
+        ManagerUpdateStatusText.Text = $"Downloading GTMM update {_managerUpdate.Version}...";
+        try
+        {
+            await _managerUpdateService.DownloadAndRestartAsync(_managerUpdate.Asset);
+            Close();
+        }
+        catch (Exception ex)
+        {
+            _managerUpdateInProgress = false;
+            UpdateManagerButton.IsEnabled = true;
+            AutoUpdateManagerBox.IsEnabled = true;
+            ManagerUpdateStatusText.Text = $"GTMM could not install the update. Details: {ex.Message}";
+            ShowToast($"GTMM could not install the update: {ex.Message}", true);
+        }
     }
 
     private async void OnUpdateAllClick(object? sender, RoutedEventArgs e)
@@ -1495,6 +1574,7 @@ public partial class MainWindow : Window
         try
         {
             string args = _configService.Config.LaunchArgs;
+            EnsureLinuxBepInExLaunchOptions();
             if (OperatingSystem.IsWindows())
             {
                 Process.Start(new ProcessStartInfo
@@ -1518,20 +1598,60 @@ public partial class MainWindow : Window
 
                 try
                 {
-                    Process.Start(psi);
-                }
-                catch
-                {
-                    Process.Start(new ProcessStartInfo
+                    if (Process.Start(psi) == null)
                     {
-                        FileName = "xdg-open",
-                        Arguments = "steam://rungameid/1533390",
-                        UseShellExecute = false
-                    });
+                        throw new InvalidOperationException("Steam did not start.");
+                    }
+                }
+                catch (Exception steamException)
+                {
+                    try
+                    {
+                        if (Process.Start(new ProcessStartInfo
+                            {
+                                FileName = "xdg-open",
+                                ArgumentList = { "steam://rungameid/1533390" },
+                                UseShellExecute = false
+                            }) == null)
+                        {
+                            throw new InvalidOperationException("The game link did not open.");
+                        }
+                    }
+                    catch (Exception openException)
+                    {
+                        throw new InvalidOperationException(
+                            $"Could not open Steam: {steamException.Message}; " +
+                            $"could not open the game link: {openException.Message}",
+                            openException);
+                    }
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ShowToast($"Could not launch Gorilla Tag: {ex.Message}", true);
+        }
+    }
+
+    private void EnsureLinuxBepInExLaunchOptions()
+    {
+        if (!OperatingSystem.IsLinux() ||
+            !SteamDetectorService.VerifyBepInEx(_configService.Config.GamePath).IsBepInExValid)
+        {
+            return;
+        }
+
+        try
+        {
+            if (SteamLaunchOptionsService.EnsureBepInExLaunchOption())
+            {
+                ShowToast("Set Steam's launch options to load BepInEx.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"Could not set BepInEx's Steam launch option: {ex.Message}", true);
+        }
     }
 
     private void OnOpenFolderClick(object? sender, RoutedEventArgs e)

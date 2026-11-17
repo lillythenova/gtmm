@@ -11,8 +11,11 @@ You can use it to:
 
 - Add, enable, disable, and remove mods
 - Browse mod repositories and track GitHub releases for updates
+- Check for GTMM updates and optionally install them automatically
 - Install the official BepInEx release directly when it is missing
 - Launch Gorilla Tag through Steam
+
+GTMM checks its own latest release at startup. When an update is available, you can install it from **Settings → Updates**. Enable **Automatically install GTMM updates** to download and install it, then restart GTMM automatically.
 
 ## Get a build
 
