@@ -37,15 +37,14 @@ public class ModService
             var match = repoMods?.FirstOrDefault(repoMod =>
                 repoMod.Name.Equals(modName, StringComparison.OrdinalIgnoreCase));
             string currentVersion = match?.Version ?? "v1.0.0";
-            bool hasUpdate = match != null && IsNewer("v1.0.0", match.Version);
             list.Add(new ModItem
             {
                 Name = modName,
                 Version = currentVersion,
                 Path = directory,
                 Enabled = !isDisabled,
-                HasUpdate = hasUpdate,
-                NewVersion = hasUpdate ? match!.Version : ""
+                HasUpdate = false,
+                NewVersion = ""
             });
         }
 
@@ -63,30 +62,14 @@ public class ModService
                 : fileName.Substring(0, fileName.Length - 13);
 
             string currentVer = "v1.0.0";
-            bool hasUpdate = false;
-            string newVer = "";
-
-            if (repoMods != null)
-            {
-                var match = repoMods.FirstOrDefault(rm => rm.Name.Equals(modName, StringComparison.OrdinalIgnoreCase));
-                if (match != null)
-                {
-                    if (IsNewer(currentVer, match.Version))
-                    {
-                        hasUpdate = true;
-                        newVer = match.Version;
-                    }
-                }
-            }
-
             list.Add(new ModItem
             {
                 Name = modName,
                 Version = currentVer,
                 Path = file,
                 Enabled = isEnabled,
-                HasUpdate = hasUpdate,
-                NewVersion = newVer
+                HasUpdate = false,
+                NewVersion = ""
             });
         }
 
@@ -418,7 +401,7 @@ public class ModService
         return fullPath;
     }
 
-    private static bool IsNewer(string currentVer, string repoVer)
+    public static bool IsNewer(string currentVer, string repoVer)
     {
         string c = currentVer.TrimStart('v', 'V');
         string r = repoVer.TrimStart('v', 'V');

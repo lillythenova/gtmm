@@ -4,7 +4,7 @@
     {
       "name": "computer interface",
       "version": "2.1.5",
-      "description": "Computer Interface is a library for Gorilla Tag which replaces the base computer with a custom computer, and allows developers to add functionality to it.",
+      "description": "Computer Interface is a library which replaces the base computer with a custom computer, and allows developers to add functionality to it.",
       "author": "DecalFree",
       "dependencies": [],
       "download_url": "https://github.com/DecalFree/ComputerInterface/releases/download/2.1.5/ComputerInterface-BepInEx.zip"
@@ -12,13 +12,59 @@
     {
       "name": "Gorilla Library",
       "version": "1.1.0",
-      "description": "Essential general-purpose Gorilla Tag library for modding the game with BepInEx, packed with utilities and extensions for developers to use in their mods",
+      "description": "Essential general-purpose library for modding the game with BepInEx",
       "author": "Gorilla Tag Modding Hub",
       "dependencies": [],
       "download_urls": [
         "https://github.com/GorillaTagModdingHub/GorillaLibrary/releases/download/1.1.0/GorillaLibrary.dll",
         "https://github.com/GorillaTagModdingHub/GorillaLibrary/releases/download/1.1.0/GorillaLibrary.Wardrobe.dll"
       ]
+    },
+    {
+      "name": "gorilla shirts",
+      "version": "2.4.9",
+      "description": "GorillaShirts is a mod which gives players the ability to create their own custom shirts for the game.",
+      "author": "dev9998",
+      "dependencies": [
+        "Gorilla Library"
+      ],
+      "download_url": "https://github.com/developer9998/GorillaShirts/releases/download/v2.4.9/GorillaShirts.dll"
+    },
+    {
+      "name": "Mono sandbox",
+      "version": "1.2.4",
+      "description": "MonoSandbox is a gameplay mod that implements various objects, weapons, tools, and utilites for the player to use.",
+      "author": "dev9998",
+      "dependencies": [
+        "Gorilla Library"
+      ],
+      "download_url": "https://github.com/developer9998/MonoSandbox/releases/latest/download/MonoSandbox.dll"
+    },
+    {
+      "name": "Bark",
+      "version": "3.0.2",
+      "description": "It allows the player to summon a 3D interface into the game that toggles various fun/useful mechanics on and off.",
+      "author": "KyleTheScientist & ngbats",
+      "dependencies": [
+        "Gorilla Library"
+      ],
+      "download_url": "https://github.com/NgbatzYT/Bark/releases/latest/download/Bark.dll"
+    },
+    {
+      "name": "Old modes",
+      "version": "1.1.0",
+      "description": "old modes is a mod that adds back the older gamemodes of gorilla tag",
+      "author": "Toastconcern",
+      "dependencies": [],
+      "download_url": "https://github.com/Toastconcern/OldModes/releases/download/v1.1.0/OldModes.dll"
+    },
+    {
+      "name": "Monke Cosmetics",
+      "version": "2.2011",
+      "description": "monke cosmetics is a cosmetic mod that adds materials and other cosmetics",
+      "author": "Ngbatz",
+      "dependencies": [],
+      "download_url": "https://github.com/NgbatzYT/MonkeCosmetics/releases/download/2.2011/MonkeCosmetics.dll"
     }
   ]
 }

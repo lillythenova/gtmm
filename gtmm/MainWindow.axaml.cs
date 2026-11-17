@@ -314,12 +314,16 @@ public partial class MainWindow : Window
                 {
                     repoMod.IsInstalled = true;
                     repoMod.CanUpdate = !string.IsNullOrWhiteSpace(repoMod.InstalledVersion) &&
-                                        !repoMod.InstalledVersion.Equals(
-                                            repoMod.Version, StringComparison.OrdinalIgnoreCase);
+                                        ModService.IsNewer(repoMod.InstalledVersion, repoMod.Version);
                     if (repoMod.CanUpdate)
                     {
                         installed.HasUpdate = true;
                         installed.NewVersion = repoMod.Version;
+                    }
+                    else
+                    {
+                        installed.HasUpdate = false;
+                        installed.NewVersion = "";
                     }
                 }
                 continue;
@@ -332,8 +336,21 @@ public partial class MainWindow : Window
             if (match != null)
             {
                 repoMod.IsInstalled = true;
-                repoMod.InstalledVersion = match.Version;
-                repoMod.CanUpdate = match.HasUpdate;
+                string versionKey = GetInstalledVersionKey(repoMod);
+                if (_configService.Config.InstalledModVersions.TryGetValue(
+                        versionKey, out string? installedVersion))
+                {
+                    repoMod.InstalledVersion = installedVersion;
+                    repoMod.CanUpdate = ModService.IsNewer(installedVersion, repoMod.Version);
+                }
+                else
+                {
+                    repoMod.InstalledVersion = "";
+                    repoMod.CanUpdate = false;
+                }
+
+                match.HasUpdate = repoMod.CanUpdate;
+                match.NewVersion = repoMod.CanUpdate ? repoMod.Version : "";
             }
             else
             {
@@ -1253,7 +1270,7 @@ public partial class MainWindow : Window
 
             installedNames.Add(item.Name);
             installedNow.Add(item.Name);
-            if (item.GithubAssetNames.Count > 0 && !string.IsNullOrEmpty(item.SourceRepositoryUrl))
+            if (!string.IsNullOrEmpty(item.SourceRepositoryUrl))
             {
                 _configService.Config.InstalledModVersions[GetInstalledVersionKey(item)] = item.Version;
                 item.InstalledVersion = item.Version;
