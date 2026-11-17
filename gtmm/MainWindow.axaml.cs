@@ -1574,7 +1574,10 @@ public partial class MainWindow : Window
         try
         {
             string args = _configService.Config.LaunchArgs;
-            EnsureLinuxBepInExLaunchOptions();
+            if (!EnsureLinuxBepInExLaunchOptions())
+            {
+                return;
+            }
             if (OperatingSystem.IsWindows())
             {
                 Process.Start(new ProcessStartInfo
@@ -1633,12 +1636,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private void EnsureLinuxBepInExLaunchOptions()
+    private bool EnsureLinuxBepInExLaunchOptions()
     {
         if (!OperatingSystem.IsLinux() ||
             !SteamDetectorService.VerifyBepInEx(_configService.Config.GamePath).IsBepInExValid)
         {
-            return;
+            return true;
         }
 
         try
@@ -1647,10 +1650,12 @@ public partial class MainWindow : Window
             {
                 ShowToast("Set Steam's launch options to load BepInEx.");
             }
+            return true;
         }
         catch (Exception ex)
         {
             ShowToast($"Could not set BepInEx's Steam launch option: {ex.Message}", true);
+            return false;
         }
     }
 

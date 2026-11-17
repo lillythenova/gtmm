@@ -427,24 +427,10 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="models:RepoModItem">
                                         <Border Classes="list-item-row" Height="72" Padding="24,0" Background="Transparent" Margin="0,0">
-                                            <Grid ColumnDefinitions="Auto,*,Auto">
-                                                
-                                                <Border Grid.Column="0"
-                                                        Width="40" Height="40"
-                                                        CornerRadius="20"
-                                                        Background="{DynamicResource PrimaryContainer}"
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,16,0">
-                                                    <TextBlock Text="{Binding Initial}"
-                                                               FontSize="16"
-                                                               FontWeight="Medium"
-                                                               Foreground="{DynamicResource OnPrimaryContainer}"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center"/>
-                                                </Border>
+                                            <Grid ColumnDefinitions="*,Auto">
 
-                                                <Grid Grid.Column="1"
-                                                      ColumnDefinitions="Auto,*"
+                                                <Grid Grid.Column="0"
+                                                      ColumnDefinitions="160,*"
                                                       RowDefinitions="Auto,Auto"
                                                       RowSpacing="2"
                                                       VerticalAlignment="Center">
@@ -471,6 +457,7 @@
                                                                Text="{Binding Description}"
                                                                FontSize="12"
                                                                Foreground="{DynamicResource TextTertiary}"
+                                                               Margin="16,0,0,0"
                                                                TextWrapping="Wrap"
                                                                MaxLines="2"
                                                                TextTrimming="CharacterEllipsis"

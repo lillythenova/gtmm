@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,8 +11,7 @@ namespace gtmm.Services;
 public static class SteamLaunchOptionsService
 {
     private const string AppId = SteamDetectorService.GorillaTagAppId;
-    private const string BepInExLaunchOption = "WINEDLLOVERRIDES=\"winhttp=n,b\" %command%";
-    private const ulong SteamIdBase = 76561197960265728;
+    private const string BepInExLaunchOption = "WINEDLLOVERRIDES=\"winhttp=n,b\"";
     private static readonly string[] AppConfigPath =
     {
         "UserLocalConfigStore", "Software", "Valve", "Steam", "apps", AppId
@@ -32,6 +31,7 @@ public static class SteamLaunchOptionsService
                 throw new InvalidDataException(
                     "Steam's Gorilla Tag settings are not in the expected format.");
             }
+            EnsureSteamIsClosed();
             string updated = document.AddPath(AppConfigPath, BepInExLaunchOption);
             WriteAtomically(configPath, updated);
             return true;
@@ -45,6 +45,7 @@ public static class SteamLaunchOptionsService
             return false;
         }
 
+        EnsureSteamIsClosed();
         string changed = launchOptions == null
             ? document.InsertValue(appNode, "LaunchOptions", desiredOptions)
             : document.ReplaceValue(launchOptions, desiredOptions);
@@ -59,49 +60,104 @@ public static class SteamLaunchOptionsService
             @"(?:^|\s)WINEDLLOVERRIDES\s*=\s*(?:""[^""]*""|'[^']*'|[^\s]+)",
             "",
             RegexOptions.IgnoreCase).Trim();
-        options = $"{BepInExLaunchOption} {options}".Trim();
-        if (!options.Contains("%command%", StringComparison.OrdinalIgnoreCase))
+        options = Regex.Replace(options, @"\s*%command%\s*", " ", RegexOptions.IgnoreCase).Trim();
+        return $"{BepInExLaunchOption} {options} %command%".Trim();
+    }
+
+    private static void EnsureSteamIsClosed()
+    {
+        if (IsSteamRunning())
         {
-            options += " %command%";
+            throw new InvalidOperationException(
+                "Steam is open and may overwrite its settings. Fully exit Steam, then click Play in GTMM to save the BepInEx option before Steam opens again.");
         }
-        return options;
+    }
+
+    private static bool IsSteamRunning()
+    {
+        foreach (string processName in new[] { "steam", "steamwebhelper" })
+        {
+            Process[] processes = Process.GetProcessesByName(processName);
+            try
+            {
+                if (processes.Length > 0)
+                {
+                    return true;
+                }
+            }
+            finally
+            {
+                foreach (Process process in processes)
+                {
+                    process.Dispose();
+                }
+            }
+        }
+
+        return false;
     }
 
     private static string FindActiveUserConfig()
     {
+        var candidates = new List<(string Path, bool HasGameSettings, DateTime LastWriteUtc)>();
         foreach (string steamRoot in SteamDetectorService.GetStandardSteamPaths())
         {
-            string configDirectory = Path.Combine(steamRoot, "config");
-            string loginUsersPath = Path.Combine(configDirectory, "loginusers.vdf");
-            if (!File.Exists(loginUsersPath))
+            string userDataDirectory = Path.Combine(steamRoot, "userdata");
+            if (!Directory.Exists(userDataDirectory))
             {
                 continue;
             }
 
-            string loginUsers = File.ReadAllText(loginUsersPath);
-            Match activeUser = Regex.Match(
-                loginUsers,
-                @"""(?<steamId>\d{17})""\s*\{(?:(?!\r?\n\s*\}).)*?""MostRecent""\s*""1""",
-                RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            if (!activeUser.Success ||
-                !ulong.TryParse(activeUser.Groups["steamId"].Value, NumberStyles.None,
-                    CultureInfo.InvariantCulture, out ulong steamId) ||
-                steamId < SteamIdBase)
+            foreach (string userDirectory in Directory.EnumerateDirectories(userDataDirectory))
             {
-                continue;
+                string userConfigPath = Path.Combine(userDirectory, "config", "localconfig.vdf");
+                if (!File.Exists(userConfigPath))
+                {
+                    continue;
+                }
+
+                string userConfig = File.ReadAllText(userConfigPath);
+                bool hasGameSettings = Regex.IsMatch(
+                    userConfig,
+                    $@"""{Regex.Escape(AppId)}""\s*\{{",
+                    RegexOptions.IgnoreCase);
+                candidates.Add((
+                    userConfigPath,
+                    hasGameSettings,
+                    File.GetLastWriteTimeUtc(userConfigPath)));
             }
 
-            string accountId = (steamId - SteamIdBase).ToString(CultureInfo.InvariantCulture);
-            string userConfigPath = Path.Combine(
-                steamRoot, "userdata", accountId, "config", "localconfig.vdf");
-            if (File.Exists(userConfigPath))
+            if (candidates.Count > 0)
             {
-                return userConfigPath;
+                break;
             }
         }
 
-        throw new FileNotFoundException(
-            "Could not find the active Steam account's settings. Open Steam and sign in, then try again.");
+        if (candidates.Count == 0)
+        {
+            throw new FileNotFoundException(
+                "Could not find a Steam user settings file. Open Steam and sign in, then try again.");
+        }
+
+        var gameCandidates = candidates
+            .Where(candidate => candidate.HasGameSettings)
+            .OrderByDescending(candidate => candidate.LastWriteUtc)
+            .ToArray();
+        if (gameCandidates.Length == 1)
+        {
+            return gameCandidates[0].Path;
+        }
+        if (gameCandidates.Length > 1)
+        {
+            return gameCandidates[0].Path;
+        }
+        if (candidates.Count == 1)
+        {
+            return candidates[0].Path;
+        }
+
+        throw new InvalidOperationException(
+            "Could not identify which Steam account owns Gorilla Tag. Sign in to the account that owns the game and try again.");
     }
 
     private static void WriteAtomically(string path, string contents)
