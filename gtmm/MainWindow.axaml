@@ -436,7 +436,7 @@
                                 <ItemsControl x:Name="ReposItemsControl" Margin="0,8">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="models:RepoModItem">
-                                        <Border Classes="list-item-row" Height="68" Padding="24,0" Background="Transparent" Margin="0,0">
+                                        <Border Classes="list-item-row" Height="72" Padding="24,0" Background="Transparent" Margin="0,0">
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 
                                                 <Border Grid.Column="0"
@@ -453,30 +453,39 @@
                                                                VerticalAlignment="Center"/>
                                                 </Border>
 
-                                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                                    <Grid ColumnDefinitions="Auto,*">
-                                                        <TextBlock Grid.Column="0"
-                                                                   Text="{Binding Name}"
-                                                                   FontSize="15"
-                                                                   FontWeight="Medium"
-                                                                   Foreground="{DynamicResource TextPrimary}"
-                                                                   VerticalAlignment="Center"
-                                                                   Margin="0,0,8,0"/>
-                                                        <TextBlock Grid.Column="1"
-                                                                   Text="{Binding Description}"
-                                                                   FontSize="12"
-                                                                   Foreground="{DynamicResource TextTertiary}"
-                                                                   TextWrapping="Wrap"
-                                                                   MaxLines="2"
-                                                                   TextTrimming="CharacterEllipsis"
-                                                                   VerticalAlignment="Center"/>
-                                                    </Grid>
-                                                    <TextBlock Text="{Binding AuthorDisplay}"
+                                                <Grid Grid.Column="1"
+                                                      ColumnDefinitions="Auto,*"
+                                                      RowDefinitions="Auto,Auto"
+                                                      RowSpacing="2"
+                                                      VerticalAlignment="Center">
+                                                    <TextBlock Grid.Row="0"
+                                                               Grid.Column="0"
+                                                               Text="{Binding Name}"
+                                                               FontSize="15"
+                                                               FontWeight="Medium"
+                                                               Foreground="{DynamicResource TextPrimary}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,8,0"
+                                                               MaxWidth="220"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Row="1"
+                                                               Grid.Column="0"
+                                                               Text="{Binding AuthorDisplay}"
                                                                IsVisible="{Binding HasAuthor}"
                                                                FontSize="11"
                                                                Foreground="{DynamicResource TextTertiary}"
                                                                VerticalAlignment="Center"/>
-                                                </StackPanel>
+                                                    <TextBlock Grid.Row="0"
+                                                               Grid.RowSpan="2"
+                                                               Grid.Column="1"
+                                                               Text="{Binding Description}"
+                                                               FontSize="12"
+                                                               Foreground="{DynamicResource TextTertiary}"
+                                                               TextWrapping="Wrap"
+                                                               MaxLines="2"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"/>
+                                                </Grid>
 
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
 

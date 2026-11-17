@@ -17,16 +17,17 @@ public partial class GithubAssetPickerWindow : Window
     public GithubAssetPickerWindow(IReadOnlyList<GithubReleaseAsset> assets)
     {
         InitializeComponent();
-        AssetComboBox.ItemsSource = assets;
         if (assets.Count > 0)
         {
-            AssetComboBox.SelectedIndex = 0;
+            SelectedAsset = assets[0];
         }
+        UpdateSelectedAssetText();
+        AssetItemsControl.ItemsSource = assets;
+        AssetPopup.PlacementTarget = AssetSelectorButton;
     }
 
     private void OnTrackClick(object? sender, RoutedEventArgs e)
     {
-        SelectedAsset = AssetComboBox.SelectedItem as GithubReleaseAsset;
         if (SelectedAsset != null)
         {
             Close();
@@ -36,5 +37,25 @@ public partial class GithubAssetPickerWindow : Window
     private void OnCancelClick(object? sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void OnAssetSelectorClick(object? sender, RoutedEventArgs e)
+    {
+        AssetPopup.IsOpen = !AssetPopup.IsOpen;
+    }
+
+    private void OnAssetOptionClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: GithubReleaseAsset asset })
+        {
+            SelectedAsset = asset;
+            UpdateSelectedAssetText();
+            AssetPopup.IsOpen = false;
+        }
+    }
+
+    private void UpdateSelectedAssetText()
+    {
+        SelectedAssetNameText.Text = SelectedAsset?.Name ?? "";
     }
 }
