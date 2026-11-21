@@ -2,11 +2,33 @@
 
 A repository is a JSON file that lists plugins and links to their downloadable files. Host the file at a URL GTMM can access over HTTPS, then add that URL under **Settings → Repositories**.
 
-## Use the GUI builder
+## Use the GUI builder or CLI
 
-Run `python3 make_repo.py` from the GTMM project folder. Enter a repository name and each mod's details, then choose **Manual links** to enter direct download URLs or **GitHub release** to enter a repository URL and one or more release asset filenames. For example, enter `https://github.com/DecalFree/ComputerInterface` and `ComputerInterface-BepInEx.zip`. Use **+** to add more files to one mod. GitHub links are assembled locally; the builder does not call or poll the GitHub API. Select a row to edit it, or remove it with **Remove selected**. Use **Preview JSON** to check the output, then **Save repository...**.
+Run `python3 make_repo.py` (or `python3 make_repo.py <repository.json>`) from the GTMM project folder.
 
-The builder creates the JSON file; it does not host it. Upload the saved file to a public HTTPS static host, then paste its raw file URL in **GTMM → Settings → Repositories**. Python's Tk GUI module (`tkinter`) must be installed.
+Features included in the builder:
+- **Full mouse-free keyboard navigation**:
+  - `Ctrl+Enter`: Save or add current mod details to list
+  - `Ctrl+S`: Quick-save repository JSON (or `Ctrl+Shift+S` for Save As)
+  - `Ctrl+O` / `Ctrl+N`: Open or create new repository
+  - `Ctrl+F`: Jump to search/filter box (`Down` moves directly into the mod list)
+  - `Up` / `Down` arrows in table: Select and load mod into editor
+  - `Enter` in table: Jump straight into the mod name field to edit
+  - `Alt+Up` / `Alt+Down`: Move selected mod up or down in the list
+  - `Delete` / `Backspace` in table: Remove selected mod
+  - `Ctrl+I`: Auto-fetch mod info from GitHub URL
+  - `Ctrl+U`: Scan all mods for newer GitHub releases
+  - `Escape`: Clear search filter or reset form
+- **Headless CLI mode (no mouse, no GUI needed)**:
+  - `python3 make_repo.py --list`: Print repository name and all mods.
+  - `python3 make_repo.py --check`: Query GitHub API and check for updates without modifying files.
+  - `python3 make_repo.py --update`: Check and automatically write newer versions and links to `repository.json`.
+- **Automatic GitHub details**: Enter a GitHub repository or release URL and click **⚡ Fetch Info** (or press `Ctrl+I`). The builder queries GitHub's API to automatically populate the mod name, latest release version, author, description, and list of available release assets.
+- **One-click repository updates**: Click **🔄 Check for Updates** (or press `Ctrl+U`) to scan every mod in the repository against GitHub releases. If an author publishes a newer release, the builder presents a summary and updates download links accordingly.
+- **Live search and filter**: Filter repository mods instantly using the search box above the table (`Ctrl+F`).
+- **Preview**: Use **Preview JSON** (`Ctrl+P`) to inspect formatted JSON.
+
+The builder creates and updates the JSON file; it does not host it. Upload the saved file to a public HTTPS static host, then paste its raw file URL in **GTMM → Settings → Repositories**. Python's Tk GUI module (`tkinter`) is optional when using CLI flags (`--update`, `--check`, `--list`).
 
 ## Repository file
 
